@@ -22,7 +22,8 @@ const serverTypes = {
     MINECRAFT: "minecraft",
     ARMA: "arma",
     TSSERVER: "tsserver",
-    TMODLOADER: "tmodloader"
+    TMODLOADER: "tmodloader",
+    FACTORIO: "factorio",
 };
 const Events = {
     INFO: "info",
