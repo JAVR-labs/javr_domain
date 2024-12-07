@@ -21,7 +21,7 @@ class ABaseServer {
      * @param {string} htmlID - HtmlID, unique name used for identification.
      * @param {string} displayName - Name displayed on the frontend.
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
-     * @param maxPlayers - Player limit on the server.
+     * @param {number} maxPlayers - Player limit on the server.
      */
     constructor({port, htmlID, displayName, type, maxPlayers = 0}) {
         // Ensure that this class is abstract
@@ -125,6 +125,7 @@ class AStartableServer extends ABaseServer {
      *
      *
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
+     * @param maxPlayers
      * @param {string} [filePath] - Path to the file launching the server.
      * Pass this for servers launching from a single file.
      * @param {string} [workingDir] - Path to the server folder.
@@ -255,8 +256,8 @@ class AStartableServer extends ABaseServer {
  * Status is updated based on port activity.
  */
 class GenericServer extends ABaseServer {
-    constructor({port, htmlID, displayName}) {
-        super({port, htmlID, displayName, type: serverTypes.GENERIC});
+    constructor({port, htmlID, displayName, maxPlayers}) {
+        super({port, htmlID, displayName, type: serverTypes.GENERIC, maxPlayers});
 
         this.type = serverTypes.GENERIC;
     }
@@ -268,11 +269,11 @@ class GenericServer extends ABaseServer {
  */
 class GenericStartableServer extends AStartableServer {
     constructor({
-                    port, htmlID, displayName, status,
+                    port, htmlID, displayName, status, maxPlayers,
                     filePath = '', startArgs, startingTime
                 }) {
         super({
-            port, htmlID, displayName, status, type: serverTypes.GENERIC_EXEC,
+            port, htmlID, displayName, status, type: serverTypes.GENERIC_EXEC, maxPlayers,
             filePath, startArgs, startingTime
         });
 
@@ -304,13 +305,13 @@ class MinecraftServer extends AStartableServer {
      * @param {string} minecraftVersion - Version of Minecraft the server is running.
      */
     constructor({
-                    port, htmlID, displayName,
+                    port, htmlID, displayName, maxPlayers = 0,
                     workingDir, startArgs, startingTime,
-                    maxPlayers = 0, minecraftVersion,
+                    minecraftVersion,
                 }) {
         super({
             port, htmlID, displayName, type: serverTypes.MINECRAFT,
-            workingDir, startArgs, startingTime
+            maxPlayers, workingDir, startArgs, startingTime
         });
 
         this.type = serverTypes.MINECRAFT;
@@ -506,9 +507,9 @@ class TmodloaderServer extends AStartableServer {
      * @param {number} maxPlayers - Maximum number of players allowed on the server.
      */
     constructor({
-                    port, htmlID, displayName,
+                    port, htmlID, displayName, maxPlayers = 0,
                     workingDir, startArgs, startingTime,
-                    config, useSteam, lobbyType, maxPlayers = 0
+                    config, useSteam, lobbyType
                 }) {
         super({
             port, htmlID, displayName, type: serverTypes.TMODLOADER,
@@ -698,11 +699,11 @@ class TeamspeakServer extends AStartableServer {
 
 class FactorioServer extends AStartableServer {
     constructor({
-                    port, htmlID, displayName,
+                    port, htmlID, displayName, maxPlayers,
                     filePath, startArgs, startingTime,
                     config, world
                 }) {
-        super({port, htmlID, displayName, type: serverTypes.FACTORIO, filePath, startArgs, startingTime});
+        super({port, htmlID, displayName, type: serverTypes.FACTORIO, filePath, startArgs, startingTime, maxPlayers});
 
 
         this.type = serverTypes.FACTORIO;
