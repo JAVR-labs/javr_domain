@@ -60,8 +60,11 @@ class ABaseServer {
                 customLog(this.htmlID, `netstat failed: ${stderr}`);
             }
             if (stdout !== "") {
-                if (stdout.includes("LISTENING") || stdout.includes("*:*"))
-                    this.status = statuses.ONLINE;
+                if (stdout.includes("LISTENING") || stdout.includes("*:*")) {
+                    if (this.status !== statuses.STOPPING) {
+                        this.status = statuses.ONLINE;
+                    }
+                }
                 else {
                     if (this.status !== statuses.STARTING)
                         this.status = statuses.OFFLINE;
