@@ -8,6 +8,7 @@ const SocketEvents = require("./SocketEvents.js");
 const path = require("node:path");
 const treeKill = require("tree-kill");
 const fs = require("node:fs");
+const {gracefulShutdown} = require("../utils/custom-utils");
 
 // Abstracts
 
@@ -544,11 +545,18 @@ class TmodloaderServer extends AStartableServer {
 
     stopServer() {
         customLog(this.htmlID, "Stopping server");
-        // this.sendCommand("1");
+
+        gracefulShutdown(this.currProcess.pid);
+
 
         treeKill(this.currProcess.pid, 'SIGTERM', (err) => {
             if (err && this.status !== statuses.OFFLINE) {
                 customLog(this.htmlID, `Error stopping server: ${err}`);
+                return
+            }
+
+            if (this.status === statuses.ONLINE) {
+                gracefulShutdown(this.currProcess.pid);
             }
             else {
                 this.currProcess.kill();
