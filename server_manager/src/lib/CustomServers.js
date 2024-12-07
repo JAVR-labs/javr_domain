@@ -21,8 +21,9 @@ class ABaseServer {
      * @param {string} htmlID - HtmlID, unique name used for identification.
      * @param {string} displayName - Name displayed on the frontend.
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
+     * @param maxPlayers - Player limit on the server.
      */
-    constructor({port, htmlID, displayName, type}) {
+    constructor({port, htmlID, displayName, type, maxPlayers = 0}) {
         // Ensure that this class is abstract
         if (this.constructor === ABaseServer) {
             throw new Error("Abstract classes can't be instantiated.");
@@ -33,6 +34,8 @@ class ABaseServer {
         this.displayName = displayName;
         this.status = statuses.OFFLINE;
         this.type = type;
+        this.currPlayers = [];
+        this.maxPlayers = maxPlayers;
     }
 
     // Run check periodically to see if the server is still up
@@ -90,7 +93,26 @@ class ABaseServer {
             this.updateStatus()
         }, 1000);
     }
+
+    /**
+     * @desc Adds Player to the player list and sends status update.
+     * @param {string} name - Name of the player to add.
+     */
+    addPlayer(name) {
+        this.currPlayers.push(name);
+        SocketEvents.statusResponse();
+    }
+
+    /**
+     * @desc Removes Player from the player list and sends status update.
+     * @param {string} name - Name of the player to remove.
+     */
+    removePlayer(name) {
+        this.currPlayers = this.currPlayers.filter(player => player !== name);
+        SocketEvents.statusResponse();
+    }
 }
+
 
 /**
  * @desc Abstract class for executable servers.
@@ -292,8 +314,6 @@ class MinecraftServer extends AStartableServer {
         });
 
         this.type = serverTypes.MINECRAFT;
-        this.currPlayers = [];
-        this.maxPlayers = maxPlayers;
         this.minecraftVersion = minecraftVersion;
         this.failedQuery = 0;
         MinecraftServer.minecraftJavaVer = ConfigManager.getConfig(configTypes.minecraftJavaVer);
@@ -496,7 +516,6 @@ class TmodloaderServer extends AStartableServer {
         });
 
         this.type = serverTypes.TMODLOADER;
-        this.currPlayers = [];
 
         // if config is not given load default
         this.config = config ? config : "serverconfig.txt";
@@ -604,24 +623,6 @@ class TmodloaderServer extends AStartableServer {
         });
 
         this.exitCheck(this.currProcess);
-    }
-
-    /**
-     * @desc Adds Player to the player list and sends status update.
-     * @param {string} name - Name of the player to add.
-     */
-    addPlayer(name) {
-        this.currPlayers.push(name);
-        SocketEvents.statusResponse();
-    }
-
-    /**
-     * @desc Removes Player from the player list and sends status update.
-     * @param {string} name - Name of the player to remove.
-     */
-    removePlayer(name) {
-        this.currPlayers = this.currPlayers.filter(player => player !== name);
-        SocketEvents.statusResponse();
     }
 
     /**
