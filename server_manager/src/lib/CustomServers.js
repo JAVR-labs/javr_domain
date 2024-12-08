@@ -23,7 +23,7 @@ class ABaseServer {
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
      * @param {number} maxPlayers - Player limit on the server.
      */
-    constructor({port, htmlID, displayName, type, maxPlayers = 0}) {
+    constructor({port, htmlID, displayName, type, maxPlayers }) {
         // Ensure that this class is abstract
         if (this.constructor === ABaseServer) {
             throw new Error("Abstract classes can't be instantiated.");
@@ -34,7 +34,6 @@ class ABaseServer {
         this.displayName = displayName;
         this.status = statuses.OFFLINE;
         this.type = type;
-        this.currPlayers = [];
         this.maxPlayers = maxPlayers;
     }
 
@@ -315,6 +314,8 @@ class MinecraftServer extends AStartableServer {
         });
 
         this.type = serverTypes.MINECRAFT;
+        this.currPlayers = [];
+
         this.minecraftVersion = minecraftVersion;
         this.failedQuery = 0;
         MinecraftServer.minecraftJavaVer = ConfigManager.getConfig(configTypes.minecraftJavaVer);
@@ -517,6 +518,7 @@ class TmodloaderServer extends AStartableServer {
         });
 
         this.type = serverTypes.TMODLOADER;
+        this.currPlayers = [];
 
         // if config is not given load default
         this.config = config ? config : "serverconfig.txt";
@@ -707,6 +709,7 @@ class FactorioServer extends AStartableServer {
 
 
         this.type = serverTypes.FACTORIO;
+        this.currPlayers = [];
 
         this.configFile = config
         this.configPath = `${this.workingDir}\\${config}`;
