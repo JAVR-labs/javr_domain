@@ -768,8 +768,6 @@ class FactorioServer extends AStartableServer {
         process.stdout.on("data", dataBuff => {
             const data = String(dataBuff).trim();
 
-            console.log(data);
-
             // Add player who joined
             if (data.includes("joined the game")) this.addPlayer(this.getPlayerName(data));
             // Remove player
