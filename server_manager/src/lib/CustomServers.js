@@ -5,6 +5,7 @@ const ArmaServer = require("./server_classes/ArmaServer.js");
 const TeamspeakServer = require("./server_classes/TeamspeakServer.js");
 const TmodloaderServer = require("./server_classes/TmodloaderServer.js");
 const FactorioServer = require("./server_classes/FactorioServer.js");
+const SpaceEngineersServer = require("./server_classes/SpaceEngineersServer.js");
 const {serverTypes} = require("./globals.js");
 const {statuses} = require("./globals.js");
 
@@ -16,6 +17,7 @@ const serverClasses = {
     "tsserver": TeamspeakServer,
     "tmodloader": TmodloaderServer,
     "factorio": FactorioServer
+    [serverTypes.SPACEENG]: SpaceEngineersServer
 };
 
 module.exports = {
