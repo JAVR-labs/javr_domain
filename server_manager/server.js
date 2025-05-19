@@ -16,7 +16,7 @@ const {
 } = require('./src/utils/custom-utils.js');
 const {DiscordBot} = require('./src/lib/DiscordBot.js');
 let {servers, Events, sockets, discordBots, setWebsocket} = require('./src/lib/globals.js');
-const {AStartableServer} = require("./src/lib/CustomServers.js");
+const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
 
 //
 // INIT
