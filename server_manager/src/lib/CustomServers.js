@@ -10,13 +10,13 @@ const {serverTypes} = require("./globals.js");
 const {statuses} = require("./globals.js");
 
 const serverClasses = {
-    "generic": GenericServer,
-    "generic_exec": GenericStartableServer,
-    "minecraft": MinecraftServer,
-    "arma": ArmaServer,
-    "tsserver": TeamspeakServer,
-    "tmodloader": TmodloaderServer,
-    "factorio": FactorioServer
+    [serverTypes.GENERIC]: GenericServer,
+    [serverTypes.GENERIC_EXEC]: GenericStartableServer,
+    [serverTypes.MINECRAFT]: MinecraftServer,
+    [serverTypes.ARMA]: ArmaServer,
+    [serverTypes.TSSERVER]: TeamspeakServer,
+    [serverTypes.TMODLOADER]: TmodloaderServer,
+    [serverTypes.FACTORIO]: FactorioServer,
     [serverTypes.SPACEENG]: SpaceEngineersServer
 };
 
