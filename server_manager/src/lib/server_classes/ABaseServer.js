@@ -15,7 +15,7 @@ class ABaseServer {
      * @param {string} htmlID - HtmlID, unique name used for identification.
      * @param {string} displayName - Name displayed on the frontend.
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
-     * @param {number} maxPlayers - Player limit on the server.
+     * @param {number | undefined} maxPlayers - Player limit on the server.
      */
     constructor({port, htmlID, displayName, type, maxPlayers }) {
         // Ensure that this class is abstract
