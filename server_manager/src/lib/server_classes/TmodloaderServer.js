@@ -13,15 +13,14 @@ const fs = require("node:fs");
  */
 class TmodloaderServer extends AStartableServer {
     /**
-     * @param {number} port - Port of the server.
-     * @param {string} htmlID - Unique identifier for the server.
-     * @param {string} displayName - Display name of the server.
-     *
-     * @param {string} workingDir - Path to the server folder.
-     * @param {Array<string>} startArgs - Arguments passed when launching the server.
-     * @param {number} startingTime - Maximum time the server can be starting in minutes. After that time has passed,
-     * server will be considered offline. Has to be enabled with startServer(`true`).
-     *
+     * @param port
+     * @param htmlID
+     * @param displayName
+     * @param workingDir
+     * @param startArgs
+     * @param startingTime
+     * @param cmd
+     * @param debug
      * @param {string} config - Path to a serverconfig file.
      * @param {boolean} useSteam - Whether to use steam lobby.
      * @param {string} lobbyType - What type of steam lobby to use.
