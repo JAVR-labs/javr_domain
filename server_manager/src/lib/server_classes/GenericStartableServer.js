@@ -8,11 +8,11 @@ const {serverTypes} = require("../globals.js");
 class GenericStartableServer extends AStartableServer {
     constructor({
                     port, htmlID, displayName, status, maxPlayers,
-                    filePath = '', startArgs, startingTime, cmd, debug
+                    filePath, workingDir, startArgs, startingTime, cmd, debug
                 }) {
         super({
             port, htmlID, displayName, status, type: serverTypes.GENERIC_EXEC, maxPlayers,
-            filePath, startArgs, startingTime, cmd, debug
+            filePath, workingDir, startArgs, startingTime, cmd, debug
         });
 
         this.type = serverTypes.GENERIC_EXEC;
