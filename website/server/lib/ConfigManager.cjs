@@ -13,6 +13,7 @@ const ConfigTypes = {
     discordBots: "discord-bots.json",
     websiteConfig: "website-config.json",
     arduinos: "arduinos.json",
+    zeroTierConfig: "zeroTierConfig.json"
 };
 
 // Templates used for config generation
@@ -34,7 +35,11 @@ const fileTemplates = {
         processEnv: "development",
         rules: {}
     },
-    "arduinos.json": {}
+    "arduinos.json": {},
+    "zeroTierConfig.json": {
+        "network": null,
+        "token": null,
+    },
 };
 
 class ConfigManager {

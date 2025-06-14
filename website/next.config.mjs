@@ -19,8 +19,8 @@ const nextConfig = {
                 permanent: true,
             },
             {
-                source: '/zt',
-                destination: '/zt.html',
+                source: '/zt.html',
+                destination: '/zero-tier',
                 permanent: true,
             },
             {

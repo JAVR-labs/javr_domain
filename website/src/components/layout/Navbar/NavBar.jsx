@@ -2,7 +2,7 @@ import NavLogo from "@/src/components/ui/NavLogo.jsx";
 import {useRouter} from "next/router";
 import styles from "./navbar.module.scss"
 
-const urls = {Home: "/", Services: "/services", ZeroTier: "/zt", TerraMetrics: "/terra-metrics"};
+const urls = {Home: "/", Services: "/services", ZeroTier: "/zero-tier", TerraMetrics: "/terra-metrics"};
 
 function NavList() {
     const router = useRouter();

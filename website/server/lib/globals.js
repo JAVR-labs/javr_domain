@@ -25,6 +25,7 @@ const Events = {
     ZT_RESPONSE: "zt_response",
     ZT_REQUEST: "zt_request",
     ZT_SEND_FORM: 'zt_send_form',
+    ZT_REQUEST_FAILED: 'zt_request_failed',
     REQUEST_FAILED: 'request_failed',
     START_SERVER_REQUEST: 'start_server_request',
     STOP_SERVER_REQUEST: 'stop_server_request',

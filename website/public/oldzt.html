@@ -1,0 +1,26 @@
+
+    <div class="container-sm color-status-bg mt-5 p-5 rounded-4">
+        <ul id="ZT-list" class="list-group container-sm striped-list border-dark">
+            <li class="list-group-item d-flex border-primary-subtle fw-bold">
+                <span class="ZT-name w-25">Nazwa</span>
+                <span class="ZT-IP me-auto">Komentarz</span>
+                <span class="ZT-IP ms-auto me-2">Adimg IP</span>
+            </li>
+            <!-- <li class="list-group-item d-flex">
+                <span class="ZT-name">Nazwa</span>
+                <span class="ZT-IP">Adimg IP</span>
+            </li> -->
+
+        </ul>
+    </div>
+
+    <div class="container-sm color-status-bg mt-5 p-5 rounded-4" id="ZT-user-editor">
+        <label for="Select-form">Wybierz swój "ZeroTier Addimgs": </label>
+        <br/>
+        <select class="form-select" aria-label="Default select example" id="Select-form" onchange="generateForm()">
+            <option value="" disabled selected hidden>Select your id</option>
+        </select>
+        
+    </div>
+</body>
+</html>

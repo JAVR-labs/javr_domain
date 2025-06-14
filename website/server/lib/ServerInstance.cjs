@@ -77,7 +77,7 @@ class ServerInstance {
      */
     async startWebsite() {
         // Server setup
-        const dev = process.env.NODE_ENV !== this.#processEnv;
+        const dev = this.#processEnv !== "production";
         this.#app = next({dev});
         const handle = this.#app.getRequestHandler();
 
@@ -322,56 +322,78 @@ class ServerInstance {
             // ZeroTier
             //
 
-            const apiTokens = ConfigManager.getConfig(ConfigTypes.apiTokens);
-            const zeroTierToken = apiTokens["tokens"]["zerotier"];
+            const zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
+            const zeroTierToken = zeroTierConfig.token;
 
             //Handling ZeroTier Request
             clientSocket.on(Events.ZT_REQUEST, () => {
 
                 customLog(this.name, `${ip} requested ZeroTier information`);
 
-                let config = {
-                    "method": "GET",
-                    "maxBodyLength": "Infinity",
-                    "url": "https://api.zerotier.com/api/v1/network/0cccb752f7ccba90/member",
-                    "headers": {
-                        "Authorization": `${zeroTierToken}`
-                    }
-                };
 
-                // noinspection JSCheckFunctionSignatures
-                axios.request(config)
-                    .then((response) => {
-                        SocketEvents.ztResponse(websiteIO, response.data);
-                    })
-                    .catch((error) => {
-                        customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
-                    });
+                if (zeroTierConfig.network) {
+                    let config = {
+                        "method": "GET",
+                        "maxBodyLength": "Infinity",
+                        "url": `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member`,
+                        "headers": {
+                            "Authorization": `${zeroTierToken}`
+                        }
+                    };
+                    axios.request(config)
+                        .then((response) => {
+                            SocketEvents.ztResponse(websiteIO, response.data);
+                        })
+                        .catch((error) => {
+                            customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
+                            SocketEvents.ztErrorResponse(websiteIO, `${error.response.statusText} ${error.response.status}`);
+                        });
+                } else {
+                    customLog(this.name, `No ZeroTier configuration found. Skipping...`);
+                    SocketEvents.ztErrorResponse(websiteIO, `Brak konfiguracji dla ZeroTier.`);
+                }
             });
 
+
+
             //Sending user edit form to ZeroTier api
-            clientSocket.on(Events.ZT_SEND_FORM, (userJSON, idUserJSON, apiUrl) => {
+            clientSocket.on(Events.ZT_SEND_FORM, (data, userId) => {
 
-                customLog(this.name, `${ip} requested change of ZeroTier user - (${idUserJSON}) ${userJSON.name} ${userJSON.description}`);
+                customLog(this.name, `${ip} requested change of ZeroTier user - (${userId}) ${data.name} ${data.description}`);
 
-                let postConfig = {
-                    "method": "POST",
-                    "maxBodyLength": "Infinity",
-                    "url": apiUrl,
-                    "data": JSON.stringify(userJSON),
-                    "headers": {
-                        "Authorization": `${zeroTierToken}`
-                    }
+                //Prepare package to send
+                let dataToPost = {
+                    "name": data.name,
+                    "description": data.description,
+                    "config":
+                        {
+                            "authorized": data.authorize
+                        }
                 };
 
-                // noinspection JSCheckFunctionSignatures
-                axios.request(postConfig)
-                    .then(() => {
-                        customLog(this.name, `${ip} changed ZeroTier user - (${idUserJSON}) ${userJSON.name} ${userJSON.description}`);
-                    })
-                    .catch((error) => {
-                        customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
-                    });
+                //Sending data to zero tier
+                let zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
+
+                if (zeroTierConfig.network) {
+                    let postConfig = {
+                        "method": "POST",
+                        "maxBodyLength": "Infinity",
+                        "url": `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member/${userId}`,
+                        "data": JSON.stringify(dataToPost),
+                        "headers": {
+                            "Authorization": `${zeroTierToken}`
+                        }
+                    };
+                    axios.request(postConfig)
+                        .then(() => {
+                            customLog(this.name, `${ip} changed ZeroTier user - (${userId}) ${data.name} ${data.description}`);
+                        })
+                        .catch((error) => {
+                            customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
+                        });
+                } else {
+                    customLog(this.name, `No ZeroTier configuration found. Skipping...`);
+                }
 
             });
 

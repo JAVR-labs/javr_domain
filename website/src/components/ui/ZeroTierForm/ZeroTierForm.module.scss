@@ -1,0 +1,20 @@
+@import "../../../styles/variables.module.scss";
+
+.zeroTierForm {
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background-color: rgba(89, 78, 234, 0.53);
+  color: #ffffff;
+}
+
+.formControl {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background-color: #3a3a3a;
+  color: #594eea;
+}
