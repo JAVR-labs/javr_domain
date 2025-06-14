@@ -29,12 +29,12 @@ class TmodloaderServer extends AStartableServer {
      */
     constructor({
                     port, htmlID, displayName, maxPlayers = 0,
-                    workingDir, startArgs, startingTime,
+                    workingDir, startArgs, startingTime, cmd, debug,
                     config, useSteam, lobbyType
                 }) {
         super({
             port, htmlID, displayName, type: serverTypes.TMODLOADER,
-            workingDir, startArgs, startingTime
+            workingDir, startArgs, startingTime, cmd, debug
         });
 
         this.type = serverTypes.TMODLOADER;

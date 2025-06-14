@@ -9,11 +9,11 @@ const {serverTypes} = require("../globals.js");
 class ArmaServer extends AStartableServer {
     constructor({
                     port, htmlID, displayName,
-                    filePath = '', startArgs, startingTime
+                    filePath = '', startArgs, startingTime, cmd, debug
                 }) {
         super({
             port, htmlID, displayName, type: serverTypes.ARMA,
-            filePath, startArgs, startingTime
+            filePath, startArgs, startingTime, cmd, debug
         });
 
         this.type = serverTypes.ARMA;

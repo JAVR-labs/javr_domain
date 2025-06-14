@@ -8,10 +8,21 @@ const {execFile} = require("node:child_process");
 class FactorioServer extends AStartableServer {
     constructor({
                     port, htmlID, displayName, maxPlayers,
-                    filePath, startArgs, startingTime,
+                    filePath, startArgs, startingTime, cmd, debug,
                     config, world
                 }) {
-        super({port, htmlID, displayName, type: serverTypes.FACTORIO, filePath, startArgs, startingTime, maxPlayers});
+        super({
+            port,
+            htmlID,
+            displayName,
+            type: serverTypes.FACTORIO,
+            filePath,
+            startArgs,
+            startingTime,
+            maxPlayers,
+            cmd,
+            debug
+        });
 
 
         this.type = serverTypes.FACTORIO;

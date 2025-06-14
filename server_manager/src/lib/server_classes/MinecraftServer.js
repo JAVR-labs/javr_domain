@@ -30,12 +30,12 @@ class MinecraftServer extends AStartableServer {
      */
     constructor({
                     port, htmlID, displayName, maxPlayers = 0,
-                    workingDir, startArgs, startingTime,
+                    workingDir, startArgs, startingTime, cmd, debug,
                     minecraftVersion,
                 }) {
         super({
             port, htmlID, displayName, type: serverTypes.MINECRAFT,
-            maxPlayers, workingDir, startArgs, startingTime
+            maxPlayers, workingDir, startArgs, startingTime, cmd, debug
         });
 
         this.type = serverTypes.MINECRAFT;

@@ -1,7 +1,7 @@
 const {customLog} = require("../../utils/custom-utils.js");
 const path = require("node:path");
 const {statuses} = require("../globals.js");
-const {execFile} = require("child_process");
+const {execFile, spawn} = require("child_process");
 const ABaseServer = require("./ABaseServer.js");
 
 /**
@@ -22,11 +22,14 @@ class AStartableServer extends ABaseServer {
      * Pass this for servers that require launching multiple files or specific launch procedure.
      * @param {string[]} [startArgs] - Arguments passed when launching the file.
      * @param {number} startingTime - Maximum time the server can be starting in minutes. After that time has passed
+     * @param {boolean} cmd - Whether to use cmd to launch the server.
+     * @param {boolean} debug - Whether to launch server in debug mode (prints server console).
      * server will be considered offline. Has to be enabled with startServer(`true`).
      */
     constructor({
                     port, htmlID, displayName, type,
                     filePath, workingDir, startArgs, startingTime = 2,
+                    cmd = false, debug = false
                 }) {
         super({port, htmlID, displayName, type});
 
@@ -54,7 +57,9 @@ class AStartableServer extends ABaseServer {
         this.type = type;
         this.currProcess = null;
         this.startArgs = startArgs;
-        this.startingTime = startingTime; // Minutes before server is considered to have failed to start
+        this.startingTime = startingTime;
+        this.cmd = cmd;
+        this.debug = debug;
     }
 
     /**
@@ -67,11 +72,24 @@ class AStartableServer extends ABaseServer {
         customLog(this.htmlID, `Starting server`);
         this.status = statuses.STARTING;
 
+        if (this.cmd) {
+            this.currProcess = spawn(
+                this.filePath, this.startArgs,
+                {cwd: this.workingDir},
+            );
+        }
+        else {
+            this.currProcess = execFile(
+                this.filePath, this.startArgs,
+                {cwd: this.workingDir},
+            );
+        }
 
-        this.currProcess = execFile(
-            this.filePath, this.startArgs,
-            {cwd: this.workingDir},
-        );
+        // Log to console if debug is on
+        if (this.debug) {
+            this.currProcess.stdout.pipe(process.stdout);
+            this.currProcess.stderr.pipe(process.stderr);
+        }
 
 
         if (timeout) {
