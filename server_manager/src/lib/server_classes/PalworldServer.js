@@ -24,7 +24,6 @@ class PalworldServer extends AStartableServer {
     stopServer() {
         if (this.status === statuses.STOPPING) this.forceQuit();
 
-        const axios = require('axios');
         let data = JSON.stringify({
             "waittime": 3,
             "message": "Server will shutdown in 3 seconds."
@@ -56,8 +55,6 @@ class PalworldServer extends AStartableServer {
 
     forceQuit() {
         customLog(this.htmlID, `Server not online, forcing manual exit`);
-
-        const axios = require('axios');
 
         let config = {
             method: 'post',
