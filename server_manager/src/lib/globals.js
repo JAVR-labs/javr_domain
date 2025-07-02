@@ -25,7 +25,8 @@ const serverTypes = {
     TMODLOADER: "tmodloader",
     FACTORIO: "factorio",
     SPACEENG: "spaceeng",
-    ARK: "ark"
+    ARK: "ark",
+    PALWORLD: "palworld",
 };
 const Events = {
     INFO: "info",

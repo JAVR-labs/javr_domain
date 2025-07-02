@@ -9,6 +9,7 @@ const SpaceEngineersServer = require("./server_classes/SpaceEngineersServer.js")
 const {serverTypes} = require("./globals.js");
 const {statuses} = require("./globals.js");
 const ArkServer = require("./server_classes/ArkServer");
+const PalworldServer = require("./server_classes/PalworldServer");
 
 const serverClasses = {
     [serverTypes.GENERIC]: GenericServer,
@@ -19,7 +20,8 @@ const serverClasses = {
     [serverTypes.TMODLOADER]: TmodloaderServer,
     [serverTypes.FACTORIO]: FactorioServer,
     [serverTypes.SPACEENG]: SpaceEngineersServer,
-    [serverTypes.ARK]: ArkServer
+    [serverTypes.ARK]: ArkServer,
+    [serverTypes.PALWORLD]: PalworldServer
 };
 
 module.exports = {
