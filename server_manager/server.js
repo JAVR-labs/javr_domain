@@ -6,25 +6,26 @@ const {exec} = require('child_process');
 // Local imports
 const {
     statuses,
-    serverTypes,
     serverClasses,
-} = require("./object_classes/CustomServers");
+} = require("./src/lib/CustomServers");
 const {
     customLog,
     getElementByHtmlID,
     emitDataGlobal,
     anyServerUsed
-} = require('./utils/CustomUtils');
-const {DiscordBot} = require('./object_classes/DiscordBot');
-const {servers} = require('./utils/SharedVars');
-
+} = require('./src/utils/custom-utils.js');
+const {DiscordBot} = require('./src/lib/DiscordBot.js');
+let {servers, Events, sockets, discordBots, setWebsocket} = require('./src/lib/globals.js');
+const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
 
 //
 // INIT
 //
 
 // Create ConfigManager instance
-const {ConfigManager, configTypes} = require("./utils/ConfigManager");
+const {ConfigManager, configTypes} = require("./src/lib/ConfigManager.js");
+const os = require("node:os");
+const SocketEvents = require("./src/lib/SocketEvents.js");
 // Load configs
 ConfigManager.loadConfigs();
 // Get loaded configs
@@ -42,7 +43,6 @@ sleepConditionDetector();
 //
 
 // Load Discord bots
-const discordBots = [];
 for (const botName in discordBotsConfig) {
     // Load initial parameters from config
     let constructorParams = discordBotsConfig[botName];
@@ -59,9 +59,8 @@ for (const botName in discordBotsConfig) {
 }
 
 // Load servers
-for (const type of Object.values(serverTypes)) {
-    for (const serverName in serversInfo[type]) {
-        const server = (serversInfo[type][serverName]);
+for (const type in serversInfo) {
+    for (const server of serversInfo[type]) {
         servers.push(new serverClasses[type](server))
     }
 }
@@ -84,79 +83,82 @@ const server = app.listen(3001, () => {
     // Start checking ports for every defined server
     for (const server of servers) {
         customLog(server.htmlID, "Starting statusMonitor");
-        server.statusMonitor(emitDataGlobal, io, "status_response", {servers: servers})
+        server.statusMonitor()
     }
 });
 
 // Start socket
 // noinspection JSValidateTypes
 const io = socketIO(server);
+setWebsocket(io);
 
 // When client connects to the server
-io.on('connection', socket => {
+io.on(Events.CONNECTION, socket => {
+    sockets.push(socket);
+
     let ip = socket.handshake.address.split(':');
     ip = ip[ip.length - 1];
 
     customLog(siteIDName, `Established connection with website server`);
 
     // Respond to clients data request
-    socket.on('status_request', () => {
+    socket.on(Events.STATUS_REQUEST, () => {
         // Send back servers statuses
         if (socket) {
             customLog(siteIDName, `Status request received from ${ip}`);
-            socket.emit("status_response", {servers: servers, discordBots: discordBots});
+            SocketEvents.statusResponse();
             customLog(siteIDName, `Status update sent ${ip}`);
         }
     });
 
     // Requested server start
-    socket.on('start_server_request', (serverID, socketID) => {
+    socket.on(Events.START_SERVER_REQUEST, (serverID, socketID) => {
         customLog(serverID, `${ip} requested server start`);
 
         // Get requested server's status
         const server = getElementByHtmlID(servers, serverID);
 
-        if (server) {
+        if (server && server instanceof AStartableServer) {
             if (server.status === statuses.OFFLINE) {
                 cancelSleepTimer();
-                server.startServer(emitDataGlobal, io, {servers: servers});
+                server.startServer();
             }
             else {
                 customLog(serverID, `Request denied, port is taken`);
-                socket.emit('request_failed', {socket: socketID, reason: "Port jest zajęty"})
+                SocketEvents.requestFailed(socket, {socketID, text: 'Port jest zajęty'});
             }
         }
         else {
             customLog(serverID, `Request denied, Server not found`);
-            socket.emit('request_failed', {socket: socketID, reason: "Nie znaleziono serwera"})
+            SocketEvents.requestFailed(socket, {socketID, text: "Nie znaleziono serwera"});
         }
     });
 
     // Requested server stop
-    socket.on('stop_server_request', (serverID, socketID) => {
+    socket.on(Events.STOP_SERVER_REQUEST, (serverID, socketID) => {
         customLog(serverID, `${ip} requested server stop`);
 
         const server = getElementByHtmlID(servers, serverID);
 
-        if (server) {
+        if (server && server instanceof AStartableServer) {
             if (server.status !== statuses.OFFLINE) {
                 server.stopServer();
             }
             else {
                 customLog(serverID, `Request denied, server is not running`);
-                socket.emit('request_failed', {socket: socketID, reason: 'Serwer nie jest włączony'})
+                SocketEvents.requestFailed(socket, {socketID, text: 'Serwer nie jest włączony'});
             }
         }
         else {
             customLog(serverID, `Request denied, Server not found`);
-            socket.emit('request_failed', {socket: socketID, reason: "Nie znaleziono serwera"})
+            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono serwera'});
         }
 
     });
 
 
     // Request bot start
-    socket.on('start_dbot_request', (botID, socketID) => {
+    socket.on(Events.START_DBOT_REQUEST, (botID, socketID) => {
 
         // Search for bot in the list
         const bot = getElementByHtmlID(discordBots, botID);
@@ -170,18 +172,18 @@ io.on('connection', socket => {
             }
             else {
                 customLog(botID, `Request denied, bot already on`);
-                socket.emit('request_failed', {socket: socketID, reason: "Bot jest już włączony"})
+                SocketEvents.requestFailed(socket, {socketID, text: 'Bot jest już włączony'});
             }
         }
         else {
             customLog(botID, `Request denied, Bot not found`);
-            socket.emit('request_failed', {socket: socketID, reason: "Nie znaleziono bota"})
+            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono bota'});
         }
     });
 
     // Requested server stop
-    socket.on('stop_dbot_request', (botID, socketID) => {
-        customLog(botID, `${ip} requested bot stop`);
+    socket.on(Events.STOP_DBOT_REQUEST, (botID, socketID) => {
+        customLog(siteIDName, `${ip} requested bot stop`);
 
         // Search for bot in the list
         const bot = getElementByHtmlID(discordBots, botID);
@@ -200,15 +202,27 @@ io.on('connection', socket => {
             }
             else {
                 customLog(botID, `Request denied, bot is not online`);
-                socket.emit('request_failed', {socket: socketID, reason: 'bot nie jest w pełni włączony'})
+                SocketEvents.requestFailed(socket, {socketID, text: 'Bot nie jest w pełni włączony'});
             }
         }
         else {
             customLog(botID, `Request denied, Bot not found`);
-            socket.emit('request_failed', {socket: socketID, reason: "Nie znaleziono bota"})
+            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono bota'});
         }
 
     });
+
+
+    // Request manager stop
+    socket.on(Events.STOP_SERVER_MANAGER_REQUEST, (socketID) => {
+        customLog(siteIDName, `${ip} requested manager stop`);
+
+        sleepSystem(socket, socketID);
+    });
+
+    socket.on(Events.DISCONNECT, () => {
+        sockets = sockets.filter(s => s !== socket);
+    })
 });
 
 
@@ -224,6 +238,7 @@ function sleepConditionDetector() {
         }
     }, 60 * 1000);
 }
+
 // If they are not used for configured time enter sleep
 function sleepTimer() {
     return setTimeout(() => {
@@ -233,22 +248,34 @@ function sleepTimer() {
             cancelSleepTimer();
             sleepSystem();
         }
-        else{
+        else {
             cancelSleepTimer()
         }
     }, timeToSleep * 60 * 1000);
 }
-// Enter command to sleep
-function sleepSystem() {
-    // Command for Windows
-    const command = 'rundll32.exe powrprof.dll, SetSuspendState Sleep';
 
+/**
+ * @desc Enter command to sleep
+ * @param socket - Socket.io of the website that forwarded sleep request.
+ * @param clientSocketID - ID of the client's socket with the website.
+ */
+function sleepSystem(socket, clientSocketID) {
+    const command = os.platform() === 'win32'
+        // Windows command
+        ? 'rundll32.exe powrprof.dll, SetSuspendState Sleep'
+        // Linux command
+        : 'pm-suspend';
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Error putting system to sleep: ${error.message}`);
+            customLog(siteIDName, `Error putting system to sleep: ${error.message}`);
+            if (socket)
+                SocketEvents.requestFailed(socket, {
+                    socketID: clientSocketID,
+                    text: "Manager nie chce spać (coś nie działa)"
+                });
         }
         if (stderr) {
-            console.error(`Error output: ${stderr}`);
+            customLog(siteIDName, `Error output: ${stderr}`);
         }
     });
 }

@@ -15,7 +15,7 @@ const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
 const {customLog} = require("@server-utils/custom-utils.cjs");
 const ServerManagerList = require("@server-lib/ServerManagerList.cjs");
-const {ConfigManager, ConfigTypes} = require("@server-utils/config-manager.cjs");
+const {ConfigManager, ConfigTypes} = require("@server-lib/ConfigManager.cjs");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {getBoardByPID} = require("@server-utils/arduino-utils.cjs");
 const ServerList = require("@server-lib/ServerList.cjs");
@@ -37,7 +37,7 @@ class ServerInstance {
     /**
      * @constructor
      * @param {string} name - Name of the website.
-     * @param {JSON} managers - JSON object containing parameters for serverManagers.
+     * @param {Array} managers - JSON object containing parameters for serverManagers.
      * @param {number} port - Port on which the website is hosted.
      * @param {string[]} autostart - List of bot names to automatically start with the website.
      * @param {string} processEnv - Type of next environment.
@@ -183,22 +183,20 @@ class ServerInstance {
                 const serverManager = ServerManagerList.getManagerByName(managerID);
                 customLog(this.name, `${ip} requested ${managerID} stop`);
 
-                SocketEvents.requestFailed(clientSocket, "Opcja tymczasowo niedostępna");
-
-                // if (serverManager) {
-                //     if (serverManager.status === Statuses.ONLINE) {
-                //         customLog(this.name, `Sending sleep request to ${managerID}`);
-                //         serverManager.sleep(clientSocket);
-                //     }
-                //     else {
-                //         customLog(this.name, `Request denied, manager is not online`);
-                //         SocketEvents.requestFailed(clientSocket, "Menadżer nie jest online");
-                //     }
-                // }
-                // else {
-                //     customLog(this.name, `Request denied ${managerID} not found`);
-                //     SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
-                // }
+                if (serverManager) {
+                    if (serverManager.status === Statuses.ONLINE) {
+                        customLog(this.name, `Sending sleep request to ${managerID}`);
+                        serverManager.sleep(clientSocket);
+                    }
+                    else {
+                        customLog(this.name, `Request denied, manager is not online`);
+                        SocketEvents.requestFailed(clientSocket, "Menadżer nie jest online");
+                    }
+                }
+                else {
+                    customLog(this.name, `Request denied ${managerID} not found`);
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                }
             });
 
 

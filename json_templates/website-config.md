@@ -23,13 +23,13 @@
   "port": 3002,
   "managers": {
     "mainPC": {
-      "name": "Test_Server_Manager",
+      "htmlID": "Test_Server_Manager",
       "mac": "00:D8:61:2F:E2:D7",
       "ip": "192.168.233.50",
       "port": 3001
     },
     "serverHost": {
-      "name": "JAVR_Server_Manager",
+      "htmlID": "JAVR_Server_Manager",
       "mac": "80:FA:5B:83:12:46",
       "ip": "192.168.233.52",
       "port": 3001

@@ -299,9 +299,7 @@ fabric.properties
 # Server manager
 /server_manager/configs/*
 /server_manager/logs/*
-/server_manager/package-lock.json
 
 # Website
 /website/configs/*
 /website/logs/*
-/website/package-lock.json

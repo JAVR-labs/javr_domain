@@ -1,11 +1,11 @@
 require('module-alias/register');
 const {customLog} = require("@/server/utils/custom-utils.cjs");
-const {ConfigManager} = require("@/server/utils/config-manager.cjs");
+const {ConfigManager} = require("@server-lib/ConfigManager.cjs");
 const ServerInstance = require("@/server/lib/ServerInstance.cjs");
 const ServerManagerList = require("@/server/lib/ServerManagerList.cjs");
 const {initialiseBoards} = require("@server-utils/arduino-utils.cjs");
 const {getWebsiteIO} = require("@server-lib/globals.js");
-const {ConfigTypes} = require("@server-utils/config-manager.cjs");
+const {ConfigTypes} = require("@server-lib/ConfigManager.cjs");
 
 // Name of module used for logs
 const logName = "INIT";

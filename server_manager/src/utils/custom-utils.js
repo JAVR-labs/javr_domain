@@ -1,7 +1,17 @@
 const {exec} = require('child_process');
 const fs = require("node:fs");
-const {statuses} = require("./SharedVars");
+const {statuses} = require("../lib/globals.js");
 let logStream;
+
+const { ctrlc } = require('ctrlc-windows');
+
+function gracefulShutdown(pid) {
+    if (process.platform === 'win32') {
+        ctrlc(pid);
+    } else {
+        process.kill(pid, 'SIGTERM');
+    }
+}
 
 function killTask(name, PID) {
     if (PID) {
@@ -138,5 +148,6 @@ module.exports = {
     customLog,
     getElementByHtmlID,
     emitDataGlobal,
-    anyServerUsed
+    anyServerUsed,
+    gracefulShutdown
 };

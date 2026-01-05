@@ -70,10 +70,16 @@ class ServerManager {
                         customLog(this.htmlID, `Global status update sent to all clients`);
                     });
 
-                    // If the request is denied
+                    // If the request is denied, includes requestNotAllowed
                     this.socket.on(Events.REQUEST_FAILED, (response) => {
-                        customLog(this.htmlID, `Request failed "${response['reason']}"`);
-                        SocketEvents.requestFailed(websiteIO.to(response['socket']), response['reason']);
+                        customLog(this.htmlID, `Request failed "${response.text}"`);
+                        SocketEvents.requestFailed(websiteIO.to(response.socketID), response.text);
+                    });
+
+                    // Send info to specific client
+                    this.socket.on(Events.INFO, (response) => {
+                        customLog(this.htmlID, `Received info: ${response.text}`);
+                        SocketEvents.info(websiteIO.to(response.socketID), response.text);
                     });
                 });
             }
@@ -98,7 +104,7 @@ class ServerManager {
     }
 
     sleep(clientSocket) {
-        // TODO
+        SocketEvents.stopServerManager(this.socket, clientSocket.id);
     }
 }
 

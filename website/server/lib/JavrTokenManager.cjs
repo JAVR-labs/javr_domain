@@ -1,7 +1,7 @@
 // Local imports
 // Static imports
 const {customLog} = require("@server-utils/custom-utils.cjs");
-const {ConfigTypes, ConfigManager} = require("@server-utils/config-manager.cjs");
+const {ConfigTypes, ConfigManager} = require("@server-lib//ConfigManager.cjs");
 const {allServers} = require('@server-lib/ServerList.cjs');
 
 // Name to be displayed in logs

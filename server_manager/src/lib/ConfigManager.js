@@ -1,5 +1,5 @@
 const {readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync} = require("node:fs");
-const {customLog} = require("./CustomUtils");
+const {customLog} = require("../utils/custom-utils.js");
 
 const logName = "config-manager";
 
@@ -14,7 +14,7 @@ const configTypes = {
 const fileTemplates = {
     "minecraft_java_ver.json": {},
     "servers_info.json": {},
-    "discord_bots.json": {},
+    "discord_bots.json": [],
 };
 
 class ConfigManager {
