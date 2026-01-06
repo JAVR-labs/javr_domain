@@ -369,7 +369,7 @@ class ServerInstance {
                     "description": data.description,
                     "config":
                         {
-                            "authorized": data.authorize
+                            "authorized": data.authorized
                         }
                 };
 
