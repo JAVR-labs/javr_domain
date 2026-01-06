@@ -39,15 +39,15 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onCancel }) => {
             {/* Authorization Switch */}
             <div className="form-check form-switch mb-4">
                 <input
-                    id="authorize"
+                    id="authorized"
                     type="checkbox"
-                    name="authorize"
+                    name="authorized"
                     className="form-check-input"
-                    checked={formData.authorize}
+                    checked={formData.authorized}
                     onChange={onChange}
                     role="switch"
                 />
-                <label className="form-check-label" htmlFor="authorize">
+                <label className="form-check-label" htmlFor="authorized">
                     Autoryzuj urządzenie
                 </label>
             </div>

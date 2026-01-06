@@ -1,7 +1,7 @@
 import NavBar from '@/src/components/layout/Navbar/NavBar.jsx';
 import UniversalHead from '@components/misc/UniversalHead.jsx';
 import Footer from "@/src/components/layout/Footer/Footer.jsx";
-import styles from '@/src/styles/index.module.scss';
+import styles from '@/src/styles/zt.module.scss';
 import {mainDivClass} from "@styles/global.bootstrap.js";
 import StripedList from '../components/ui/StripedList/StripedList';
 import React, {useEffect, useState} from 'react';
@@ -12,18 +12,18 @@ import ZeroTierForm from "@components/ui/ZeroTierForm";
 function MainContent() {
     const [users, setUsers] = useState([]);
     const [usersError, setUsersError] = useState("");
-    const [editingUser, setEditingUser] = useState(null);
+    const [editUser, setEditUser] = useState(null);
     const [editFormData, setEditFormData] = useState({
         name: '',
         description: '',
-        authorize: true,
+        authorized: false,
     });
 
     useEffect(() => {
         const cleanup = innitZTSocket(setUsers, setUsersError);
         requestZTData();
         return cleanup;
-    }, []);
+    }, [users, editFormData]);
 
     // Group users by user.name
     const groupedUsers = users.reduce((acc, user) => {
@@ -32,19 +32,19 @@ function MainContent() {
         return acc;
     }, {});
 
-    const handleEdit = (user) => {
+    const pickEditUser = (user) => {
         window.scrollTo({
             top: 0,
             behavior: "smooth"
         });
 
-        console.log(user);
+        setEditUser(user);
 
-        setEditingUser(user);
+        console.log(user);
         setEditFormData({
             name: user.name || '',
             description: user.description || '',
-            authorize: user.authorize !== undefined ? user.authorize : true,
+            authorized: user.config.authorized !== undefined ? user.config.authorized : false,
         });
     };
 
@@ -64,30 +64,28 @@ function MainContent() {
         e.preventDefault();
 
         setUsers(users.map(u => {
-            if (u === editingUser) {
+            if (u === editUser) {
                 return {
                     ...u,
                     name: editFormData.name,
                     description: editFormData.description,
                     config: {
                         ...u.config,
-                        authorized: [editFormData.authorize]
+                        authorized: [editFormData.authorized]
                     }
                 };
             }
             return u;
         }));
 
-        console.log(editFormData);
+        ztSendForm(editFormData, editUser.config.address)
 
-        ztSendForm(editFormData, editingUser.config.address)
-
-        setEditingUser(null);
+        setEditUser(null);
     };
 
     // Cancel editing
     const cancelEdit = () => {
-        setEditingUser(null);
+        setEditUser(null);
     };
 
     if (usersError) {
@@ -102,9 +100,9 @@ function MainContent() {
 
     return (
         <div className="container-sm mt-5 p-4">
-            {editingUser && (
+            {editUser && (
                 <ZeroTierForm
-                    user={editingUser}
+                    user={editUser}
                     formData={editFormData}
                     onChange={handleEditChange}
                     onSubmit={handleEditSubmit}
@@ -121,7 +119,7 @@ function MainContent() {
             ) : (
                 <ZeroTierUserList
                     groupedUsers={groupedUsers}
-                    handleEdit={handleEdit}
+                    handleEdit={pickEditUser}
                 />
             )}
         </div>
@@ -132,16 +130,16 @@ function Home() {
     return (
         <>
             {/* Head */}
-            <UniversalHead />
+            <UniversalHead/>
 
             {/* Body */}
-            <div className={`${styles.bgImgMain} ${mainDivClass}`}>
-                <NavBar />
-                <MainContent />
+            <div className={`${styles.bgImgZt} ${mainDivClass}`}>
+                <NavBar/>
+                <MainContent/>
             </div>
 
             {/* Footer */}
-            <Footer />
+            <Footer/>
         </>
     );
 }

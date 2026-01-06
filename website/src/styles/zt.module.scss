@@ -2,18 +2,6 @@
 
 
 .bgImgZt {
-  background: $color-main url($backgrounds-path + "bg-zt.jpg") no-repeat center fixed;
+  background: $color-main url($backgrounds-path + "bg-main.jpg") no-repeat center fixed;
   background-size: cover;
-}
-
-#ZTUserEditor .authorised {
-  color: green;
-}
-
-#ZTUserEditor .unauthorised {
-  color: red;
-}
-
-#ZTUserEditor form {
-  margin-top: 30px;
 }
