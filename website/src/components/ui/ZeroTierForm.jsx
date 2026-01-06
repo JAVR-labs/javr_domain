@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from '@/src/styles/index.module.scss';
 
-const ZeroTierForm = ({ user, formData, onChange, onSubmit, onCancel }) => {
+const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
     return (
         <form onSubmit={onSubmit} className={`mb-4 p-4 rounded-3 ${styles.blur} text-white`}>
             <h5 className="mb-4">Edytuj urządzenie: {user.name}</h5>
@@ -57,8 +57,8 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onCancel }) => {
                 <button type="submit" className="btn btn-primary">
                     Zapisz zmiany
                 </button>
-                <button type="button" onClick={onCancel} className="btn btn-outline-light">
-                    Anuluj
+                <button type="button" onClick={onClose} className="btn btn-outline-light">
+                    Zamknij
                 </button>
             </div>
         </form>

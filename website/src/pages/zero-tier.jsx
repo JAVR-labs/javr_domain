@@ -79,12 +79,10 @@ function MainContent() {
         }));
 
         ztSendForm(editFormData, editUser.config.address)
-
-        setEditUser(null);
     };
 
-    // Cancel editing
-    const cancelEdit = () => {
+    // Close & cancel editing
+    const closeEdit = () => {
         setEditUser(null);
     };
 
@@ -106,7 +104,7 @@ function MainContent() {
                     formData={editFormData}
                     onChange={handleEditChange}
                     onSubmit={handleEditSubmit}
-                    onCancel={cancelEdit}
+                    onClose={closeEdit}
                 />
             )}
 
