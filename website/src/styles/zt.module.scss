@@ -5,3 +5,15 @@
   background: $color-main url($backgrounds-path + "bg-main.jpg") no-repeat center fixed;
   background-size: cover;
 }
+
+.glassInput {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, 0.25) !important;
+  }
+}

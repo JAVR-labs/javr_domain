@@ -1,12 +1,11 @@
 import React from 'react';
 import { FaEdit } from 'react-icons/fa';
-import styles from '@/src/styles/index.module.scss';
 
 const ZeroTierUserList = ({ groupedUsers, handleEdit }) => {
     return (
         <>
             {Object.entries(groupedUsers).map(([name, userList]) => (
-                <div key={name} className={`mb-4 p-3 rounded ${styles.blur}`}>
+                <div key={name} className={`mb-4 p-3 rounded blur`}>
                     <h5>{name ? name : "Unknown"}</h5>
 
                     {userList.map((user, index) => (

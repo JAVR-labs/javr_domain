@@ -1,9 +1,9 @@
 import React from 'react';
-import styles from '@/src/styles/index.module.scss';
+import styles from '@/src/styles/zt.module.scss';
 
 const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
     return (
-        <form onSubmit={onSubmit} className={`mb-4 p-4 rounded-3 ${styles.blur} text-white`}>
+        <form onSubmit={onSubmit} className={`mb-4 p-4 rounded-3 blur text-white`}>
             <h5 className="mb-4">Edytuj urządzenie: {user.name}</h5>
 
             {/* Name Input Field */}
@@ -13,7 +13,7 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
                     id="name"
                     type="text"
                     name="name"
-                    className="form-control"
+                    className={`form-control ${styles.glassInput}`}
                     value={formData.name}
                     onChange={onChange}
                     required
@@ -27,7 +27,7 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
                     id="description"
                     type="text"
                     name="description"
-                    className="form-control"
+                    className={`form-control ${styles.glassInput}`}
                     value={formData.description}
                     onChange={onChange}
                 />
