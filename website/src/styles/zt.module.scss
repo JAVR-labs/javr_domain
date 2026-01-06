@@ -1,19 +1,45 @@
 @import "variables.module";
 
+$border-color: #d2bdffa6;
 
 .bgImgZt {
-  background: $color-main url($backgrounds-path + "bg-zt.jpg") no-repeat center fixed;
+  background: $color-main url($backgrounds-path + "bg-main.jpg") no-repeat center fixed;
   background-size: cover;
 }
 
-#ZTUserEditor .authorised {
-  color: green;
+.userName {
+  --bs-border-width: .14rem;
+  padding-bottom: 10px;
+  border-color: $border-color !important;
 }
 
-#ZTUserEditor .unauthorised {
-  color: red;
+.userTable {
+  table-layout: fixed;
+  --bs-table-bg: transparent;
+  border-color: $border-color;
 }
 
-#ZTUserEditor form {
-  margin-top: 30px;
+.descriptionCol {
+  width: 40%;
+}
+
+.ipCol {
+  width: 30%;
+}
+
+.actionCol {
+  width: 30%;
+}
+
+
+.glassInput {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, 0.25) !important;
+  }
 }
