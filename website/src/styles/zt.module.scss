@@ -1,10 +1,36 @@
 @import "variables.module";
 
+$border-color: #d2bdffa6;
 
 .bgImgZt {
   background: $color-main url($backgrounds-path + "bg-main.jpg") no-repeat center fixed;
   background-size: cover;
 }
+
+.userName {
+  --bs-border-width: .14rem;
+  padding-bottom: 10px;
+  border-color: $border-color !important;
+}
+
+.userTable {
+  table-layout: fixed;
+  --bs-table-bg: transparent;
+  border-color: $border-color;
+}
+
+.descriptionCol {
+  width: 40%;
+}
+
+.ipCol {
+  width: 30%;
+}
+
+.actionCol {
+  width: 30%;
+}
+
 
 .glassInput {
   background-color: rgba(255, 255, 255, 0.1) !important;
