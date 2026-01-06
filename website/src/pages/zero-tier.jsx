@@ -23,7 +23,7 @@ function MainContent() {
         const cleanup = innitZTSocket(setUsers, setUsersError);
         requestZTData();
         return cleanup;
-    }, [users, editFormData]);
+    }, []);
 
     // Group users by user.name
     const groupedUsers = users.reduce((acc, user) => {
