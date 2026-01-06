@@ -26,11 +26,12 @@ function MainContent() {
     }, []);
 
     // Group users by user.name
-    const groupedUsers = users.reduce((acc, user) => {
-        if (!acc[user.name]) acc[user.name] = [];
-        acc[user.name].push(user);
-        return acc;
-    }, {});
+    const groupedUsers = [...users]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .reduce((acc, user) => {
+            (acc[user.name] ??= []).push(user);
+            return acc;
+        }, {});
 
     const pickEditUser = (user) => {
         window.scrollTo({
