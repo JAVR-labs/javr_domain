@@ -40,7 +40,6 @@ function MainContent() {
 
         setEditUser(user);
 
-        console.log(user);
         setEditFormData({
             name: user.name || '',
             description: user.description || '',
