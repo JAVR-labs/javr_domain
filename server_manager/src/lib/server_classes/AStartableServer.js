@@ -22,7 +22,7 @@ class AStartableServer extends ABaseServer {
      * @param {string} [workingDir] - Path to the server folder.
      * Pass this for servers that require launching multiple files or specific launch procedure.
      * @param {string[]} [startArgs] - Arguments passed when launching the file.
-     * @param {number} startingTime - Maximum time the server can be starting in minutes. After that time has passed
+     * @param {number} startingTime - Maximum time the server can be starting in minutes.
      * @param {boolean} cmd - Whether to use cmd to launch the server.
      * @param {boolean} debug - Whether to launch server in debug mode (prints server console).
      * server will be considered offline. Has to be enabled with startServer(`true`).
