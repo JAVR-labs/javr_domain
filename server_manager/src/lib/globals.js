@@ -22,6 +22,7 @@ const serverTypes = {
     MINECRAFT: "minecraft",
     ARMA: "arma",
     TSSERVER: "tsserver",
+    TERRARIA: "terraria",
     TMODLOADER: "tmodloader",
     FACTORIO: "factorio",
     SPACEENG: "spaceeng",

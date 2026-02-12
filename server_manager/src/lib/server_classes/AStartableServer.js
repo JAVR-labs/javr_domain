@@ -101,6 +101,7 @@ class AStartableServer extends ABaseServer {
             this.startingTimeout();
         }
         else {
+            this.handleOutput(this.currProcess);
             this.exitCheck(this.currProcess);
         }
     }
@@ -161,6 +162,11 @@ class AStartableServer extends ABaseServer {
             this.status = statuses.OFFLINE;
         })
     }
+
+    /**
+     * @desc Handle output stream for this classes process.
+     */
+    handleOutput(process){}
 }
 
 module.exports = AStartableServer;
