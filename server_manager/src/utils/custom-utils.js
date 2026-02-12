@@ -3,14 +3,49 @@ const fs = require("node:fs");
 const {statuses} = require("../lib/globals.js");
 let logStream;
 
-const { ctrlc } = require('ctrlc-windows');
+const {ctrlc} = require('ctrlc-windows');
 
-function gracefulShutdown(pid) {
+/**
+ * @description
+ * Sends Ctrl+C or SIGTERM to a process and waits for it to shut down gracefully.
+ * If the process does not respond within the specified timeout, it will be killed with SIGKILL.
+ * @param {number} pid - The process ID of the process to shut down.
+ * @param {boolean} [timeout=true] - Whether to wait for the process to shut down gracefully.
+ * @param {number} [timeoutTime=30] - The amount of time to wait before killing the process with SIGTERM in seconds.
+ */
+function gracefulShutdown(pid, timeout = true, timeoutTime = 30) {
+    // Windows specific
     if (process.platform === 'win32') {
-        ctrlc(pid);
-    } else {
+        try {
+            ctrlc(pid);
+        }
+        catch (error) {
+            customLog("graceful-shutdown", `Error during shutdown: ${error}`)
+        }
+    }
+
+    // Generic
+    else {
         process.kill(pid, 'SIGTERM');
     }
+
+    // Ensure process ends
+    setTimeout(_ => {
+        customLog("graceful-shutdown", `Process ${pid} did not exit in ${timeoutTime} seconds, killing process`);
+        if (isProcessRunning(pid))
+            process.kill(pid, 'SIGKILL');
+    }, timeoutTime * 1000);
+}
+
+function isProcessRunning(pid) {
+    try {
+        process.kill(pid, 0);
+    }
+    catch (error) {
+        customLog("graceful-shutdown", `Error during shutdown: ${error}`);
+        return false;
+    }
+    return true;
 }
 
 function killTask(name, PID) {
@@ -132,7 +167,7 @@ function anyServerUsed(servers) {
         if (server.status === statuses.OFFLINE) {
             emptyServers++;
         }
-        else if (server.status === statuses.ONLINE && server.currPlayers){
+        else if (server.status === statuses.ONLINE && server.currPlayers) {
             if (server.currPlayers.length === 0) {
                 emptyServers++;
             }
