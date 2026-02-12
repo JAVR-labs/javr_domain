@@ -3,6 +3,7 @@ const path = require("node:path");
 const {statuses} = require("../globals.js");
 const {execFile, spawn} = require("child_process");
 const ABaseServer = require("./ABaseServer.js");
+const {gracefulShutdown} = require("../../utils/custom-utils");
 
 /**
  * @desc Abstract class for executable servers.
@@ -75,7 +76,11 @@ class AStartableServer extends ABaseServer {
         if (this.cmd) {
             this.currProcess = spawn(
                 this.filePath, this.startArgs,
-                {cwd: this.workingDir},
+                {
+                    cwd: this.workingDir,
+                    shell: true,
+                    stdio: this.debug ? 'pipe' : "ignore"
+                },
             );
         }
         else {
@@ -118,7 +123,7 @@ class AStartableServer extends ABaseServer {
     stopServer() {
         customLog(this.htmlID, `Stopping server`);
         this.status = statuses.STOPPING;
-        this.currProcess.kill();
+        gracefulShutdown(this.currProcess.pid);
     }
 
     /**
@@ -145,9 +150,11 @@ class AStartableServer extends ABaseServer {
             this.status = statuses.OFFLINE;
         });
 
-        process.stderr.on('data', (err) => {
-            customLog(this.htmlID, err)
-        });
+        if (process.stderr != null) {
+            process.stderr.on('data', (err) => {
+                customLog(this.htmlID, err)
+            });
+        }
 
         process.on('exit', () => {
             customLog(this.htmlID, `Server process ended`);

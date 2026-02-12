@@ -3,12 +3,18 @@ const fs = require("node:fs");
 const {statuses} = require("../lib/globals.js");
 let logStream;
 
-const { ctrlc } = require('ctrlc-windows');
+const {ctrlc} = require('ctrlc-windows');
 
 function gracefulShutdown(pid) {
     if (process.platform === 'win32') {
-        ctrlc(pid);
-    } else {
+        try {
+            ctrlc(pid);
+        }
+        catch{
+            process.kill(pid, 'SIGTERM');
+        }
+    }
+    else {
         process.kill(pid, 'SIGTERM');
     }
 }
@@ -132,7 +138,7 @@ function anyServerUsed(servers) {
         if (server.status === statuses.OFFLINE) {
             emptyServers++;
         }
-        else if (server.status === statuses.ONLINE && server.currPlayers){
+        else if (server.status === statuses.ONLINE && server.currPlayers) {
             if (server.currPlayers.length === 0) {
                 emptyServers++;
             }
