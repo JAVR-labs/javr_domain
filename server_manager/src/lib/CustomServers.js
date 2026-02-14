@@ -10,6 +10,7 @@ const {serverTypes} = require("./globals.js");
 const {statuses} = require("./globals.js");
 const ArkServer = require("./server_classes/ArkServer");
 const PalworldServer = require("./server_classes/PalworldServer");
+const TerrariaServer = require("./server_classes/TerrariaServer");
 
 const serverClasses = {
     [serverTypes.GENERIC]: GenericServer,
@@ -17,6 +18,7 @@ const serverClasses = {
     [serverTypes.MINECRAFT]: MinecraftServer,
     [serverTypes.ARMA]: ArmaServer,
     [serverTypes.TSSERVER]: TeamspeakServer,
+    [serverTypes.TERRARIA]: TerrariaServer,
     [serverTypes.TMODLOADER]: TmodloaderServer,
     [serverTypes.FACTORIO]: FactorioServer,
     [serverTypes.SPACEENG]: SpaceEngineersServer,
@@ -28,4 +30,4 @@ module.exports = {
     serverTypes,
     statuses,
     serverClasses
-}
+};

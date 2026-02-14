@@ -3,6 +3,7 @@ const path = require("node:path");
 const {statuses} = require("../globals.js");
 const {execFile, spawn} = require("child_process");
 const ABaseServer = require("./ABaseServer.js");
+const {gracefulShutdown} = require("../../utils/custom-utils");
 
 /**
  * @desc Abstract class for executable servers.
@@ -21,7 +22,7 @@ class AStartableServer extends ABaseServer {
      * @param {string} [workingDir] - Path to the server folder.
      * Pass this for servers that require launching multiple files or specific launch procedure.
      * @param {string[]} [startArgs] - Arguments passed when launching the file.
-     * @param {number} startingTime - Maximum time the server can be starting in minutes. After that time has passed
+     * @param {number} startingTime - Maximum time the server can be starting in minutes.
      * @param {boolean} cmd - Whether to use cmd to launch the server.
      * @param {boolean} debug - Whether to launch server in debug mode (prints server console).
      * server will be considered offline. Has to be enabled with startServer(`true`).
@@ -75,7 +76,11 @@ class AStartableServer extends ABaseServer {
         if (this.cmd) {
             this.currProcess = spawn(
                 this.filePath, this.startArgs,
-                {cwd: this.workingDir},
+                {
+                    cwd: this.workingDir,
+                    shell: true,
+                    stdio: this.debug ? 'pipe' : "ignore"
+                },
             );
         }
         else {
@@ -96,6 +101,7 @@ class AStartableServer extends ABaseServer {
             this.startingTimeout();
         }
         else {
+            this.handleOutput(this.currProcess);
             this.exitCheck(this.currProcess);
         }
     }
@@ -118,7 +124,7 @@ class AStartableServer extends ABaseServer {
     stopServer() {
         customLog(this.htmlID, `Stopping server`);
         this.status = statuses.STOPPING;
-        this.currProcess.kill();
+        gracefulShutdown(this.currProcess.pid);
     }
 
     /**
@@ -145,15 +151,22 @@ class AStartableServer extends ABaseServer {
             this.status = statuses.OFFLINE;
         });
 
-        process.stderr.on('data', (err) => {
-            customLog(this.htmlID, err)
-        });
+        if (process.stderr != null) {
+            process.stderr.on('data', (err) => {
+                customLog(this.htmlID, err)
+            });
+        }
 
         process.on('exit', () => {
             customLog(this.htmlID, `Server process ended`);
             this.status = statuses.OFFLINE;
         })
     }
+
+    /**
+     * @desc Handle output stream for this classes process.
+     */
+    handleOutput(process){}
 }
 
 module.exports = AStartableServer;
