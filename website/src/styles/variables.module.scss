@@ -15,15 +15,15 @@ $color-aux-2: #3a3877;
 //$table-color-main: rgba(39, 29, 103, 0.97);
 $table-color-main: color.adjust($color-main-transparent, $saturation: -15%, $hue: 3deg, $lightness: 8%);
 
-$table-color-background: lighten(adjust-hue($table-color-main, 1deg), 18%);
-$table-color-background-nth: lighten(adjust-hue($table-color-main, -2deg), 15%);
+$table-color-background: color.adjust($table-color-main, $hue: 1deg, $lightness: 18%);
+$table-color-background-nth: color.adjust($table-color-main, $hue: -2deg, $lightness: 15%);
 $table-color-header-background: $table-color-main;
-$table-color-header-background-nth: lighten($table-color-main, 5%);
-$table-color-border: lighten(adjust-hue($table-color-main, -7deg), 32%);
+$table-color-header-background-nth: color.adjust($table-color-main, $lightness: 5%);
+$table-color-border: color.adjust($table-color-main, $hue: -7deg, $lightness: 32%);
 
 // Striped list
 $list-color-background: color.adjust($color-main-transparent, $saturation: -10%, $hue: 14deg, $lightness: 20%);
-$list-color-background-nth: lighten($list-color-background, 10%);
+$list-color-background-nth: color.adjust($list-color-background, $lightness: 10%);
 
 // Path to images, etc.
 $backgrounds-path: "/background/";

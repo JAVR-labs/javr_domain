@@ -1,5 +1,5 @@
 @use 'sass:color';
-@import "variables.module";
+@use "variables.module" as *;
 
 // Player list I think?
 .server-tooltip {

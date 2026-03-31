@@ -1,4 +1,4 @@
-@import "../../../styles/variables.module";
+@use "../../../styles/variables.module" as *;
 
 .accordion {
   padding: .5rem 1rem .2rem 1rem;
