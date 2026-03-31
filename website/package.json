@@ -9,15 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@types/react-native": "^0.72.8",
     "axios": "^1.7.7",
     "framer-motion": "^11.5.4",
     "module-alias": "^2.2.3",
-    "next": "^14.2.31",
+    "next": "^16.2.1",
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "^5.5.0",
-    "react-native": "^0.75.3",
     "serialport": "^12.0.0",
     "sharp": "^0.33.5",
     "socket.io": "^4.7.5",
@@ -26,8 +24,8 @@
     "wake_on_lan": "^1.0.0"
   },
   "devDependencies": {
-    "eslint": "^8",
-    "eslint-config-next": "14.2.9",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.1",
     "sass": "^1.78.0"
   },
   "_moduleAliases": {
