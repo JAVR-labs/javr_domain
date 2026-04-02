@@ -4,6 +4,7 @@ const {customLog, gracefulShutdown} = require("../../utils/custom-utils.js");
 const treeKill = require("tree-kill");
 const fs = require("node:fs");
 const {execFile} = require("node:child_process");
+const path = require("node:path");
 
 class FactorioServer extends AStartableServer {
     constructor({
@@ -29,7 +30,7 @@ class FactorioServer extends AStartableServer {
         this.currPlayers = [];
 
         this.configFile = config
-        this.configPath = `${this.workingDir}\\${config}`;
+        this.configPath = path.join(this.workingDir, config);
 
         this.world = world;
         this.readConfig(this.configPath).then(

@@ -1,6 +1,5 @@
-const {exec} = require('child_process');
-
-const os = require("node:os");
+const net = require("node:net");
+const dgram = require("node:dgram");
 
 const {statuses} = require("../globals.js");
 const {customLog} = require("../../utils/custom-utils.js");
@@ -17,7 +16,7 @@ class ABaseServer {
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
      * @param {number | undefined} maxPlayers - Player limit on the server.
      */
-    constructor({port, htmlID, displayName, type, maxPlayers }) {
+    constructor({port, htmlID, displayName, type, maxPlayers}) {
         // Ensure that this class is abstract
         if (this.constructor === ABaseServer) {
             throw new Error("Abstract classes can't be instantiated.");
@@ -29,48 +28,56 @@ class ABaseServer {
         this.status = statuses.OFFLINE;
         this.type = type;
         this.maxPlayers = maxPlayers;
+        this.currPlayers = [];
     }
 
     // Run check periodically to see if the server is still up
     lastStatus = statuses.OFFLINE;
 
     /**
-     * @desc Updates the status propery of the server.
+     * @desc Updates the status property of the server.
      */
     updateStatus() {
-
-        // Check what os is on the machine
-        let command;
-        if (os.platform() === 'win32') {
-            // Windows command
-            command = `netstat -an | find ":${this.port}"`;
-        }
-        else {
-            // Linux command
-            command = `netstat -tuln | grep ":${this.port}"`;
-        }
-
-        // Check if port is taken
-        exec(command, (error, stdout, stderr) => {
-            if (stderr) {
-                customLog(this.htmlID, `netstat failed: ${stderr}`);
-            }
-            if (stdout !== "") {
-                if (stdout.includes("LISTENING") || stdout.includes("*:*")) {
-                    if (this.status !== statuses.STOPPING) {
-                        this.status = statuses.ONLINE;
-                    }
-                }
-                else {
-                    if (this.status !== statuses.STARTING)
-                        this.status = statuses.OFFLINE;
+        Promise.all([
+            this.#checkTCPPort(this.port),
+            this.#checkUDPPort(this.port),
+        ]).then(([tcpFree, udpFree]) => {
+            const occupied = !tcpFree || !udpFree;
+            if (occupied) {
+                if (this.status !== statuses.STOPPING) {
+                    this.status = statuses.ONLINE;
                 }
             }
             else {
-                if (this.status !== statuses.STARTING)
+                if (this.status !== statuses.STARTING) {
                     this.status = statuses.OFFLINE;
+                }
             }
-        })
+        });
+    }
+
+    #checkTCPPort(port) {
+        return new Promise((resolve) => {
+            const server = net.createServer();
+            server.once('error', (err) => resolve(err.code !== 'EADDRINUSE'));
+            server.once('listening', () => {
+                server.close();
+                resolve(true);
+            });
+            server.listen(port);
+        });
+    }
+
+    #checkUDPPort(port) {
+        return new Promise((resolve) => {
+            const socket = dgram.createSocket('udp4');
+            socket.once('error', (err) => resolve(err.code !== 'EADDRINUSE'));
+            socket.once('listening', () => {
+                socket.close();
+                resolve(true);
+            });
+            socket.bind(port);
+        });
     }
 
     /**
@@ -103,6 +110,27 @@ class ABaseServer {
     removePlayer(name) {
         this.currPlayers = this.currPlayers.filter(player => player !== name);
         SocketEvents.statusResponse();
+    }
+
+
+    /**
+     * Converts the instance data to a JSON object.
+     *
+     * @param {Object} [additionalFields={}] - An optional object containing additional key-value pairs
+     * to include in the returned JSON object. Use to pass arguments from inheriting classes.
+     * @return {Object} A JSON representation of the instance data, including the provided additional fields.
+     */
+    toJson(additionalFields = {}) {
+        return {
+            "port": this.port,
+            "htmlID": this.htmlID,
+            "displayName": this.displayName,
+            "type": this.type,
+            "status": this.status,
+            "maxPlayers": this.maxPlayers,
+            "currPlayers": this.currPlayers,
+            ...additionalFields
+        };
     }
 }
 
