@@ -1,4 +1,5 @@
-@import "variables.module";
+@use "variables.module" as *;
+@use 'sass:color';
 
 .main {
   background: $color-aux-2;
@@ -32,7 +33,7 @@
   }
 }
 
-.fontStyle{
+.fontStyle {
   font-family: "Jersey 25", sans-serif;
   font-style: normal;
   font-weight: bold;
@@ -49,13 +50,13 @@
   display: flex;
   z-index: 1;
 
-  background: linear-gradient($color-main, lighten($color-main, 6%));
+  background: linear-gradient($color-main, color.adjust($color-main, $lightness: 6%));
   border-radius: 20px;
   border: solid 3px $color-aux;
   box-shadow: 0 0 22px 1px $color-aux;
 
   .innerBorder {
-    border: solid 2px darken($color-main, 20%);
+    border: solid 2px color.adjust($color-main, $lightness: -20%);
     border-radius: 20px;
   }
 
