@@ -1,4 +1,3 @@
-const {exec} = require('child_process');
 const fs = require("node:fs");
 const {statuses} = require("../lib/globals.js");
 let logStream;
@@ -13,51 +12,27 @@ const {ctrlc} = require('ctrlc-windows');
  * @param {boolean} [timeout=true] - Whether to wait for the process to shut down gracefully.
  * @param {number} [timeoutTime=30] - The amount of time to wait before killing the process with SIGTERM in seconds.
  */
-function gracefulShutdown(pid, timeout = true, timeoutTime = 30) {
-    // Windows specific
+/**
+ * @desc Sends a graceful shutdown signal to a process cross-platform.
+ * Does NOT wait or escalate — caller is responsible for timeout/fallback.
+ * @param {number} pid - The process ID to signal.
+ */
+function gracefulShutdown(pid) {
     if (process.platform === 'win32') {
         try {
             ctrlc(pid);
         }
-        catch (error) {
-            customLog("graceful-shutdown", `Error during shutdown: ${error}`)
+        catch (err) {
+            customLog("process-shutdown", `Error sending Ctrl+C: ${err}`);
         }
     }
-
-    // Generic
     else {
-        process.kill(pid, 'SIGTERM');
-    }
-
-    // Ensure process ends
-    setTimeout(_ => {
-        customLog("graceful-shutdown", `Process ${pid} did not exit in ${timeoutTime} seconds, killing process`);
-        if (isProcessRunning(pid))
-            process.kill(pid, 'SIGKILL');
-    }, timeoutTime * 1000);
-}
-
-function isProcessRunning(pid) {
-    try {
-        process.kill(pid, 0);
-    }
-    catch (error) {
-        customLog("graceful-shutdown", `Error during shutdown: ${error}`);
-        return false;
-    }
-    return true;
-}
-
-function killTask(name, PID) {
-    if (PID) {
-        exec(`taskkill /pid ${PID}`, (error, stdout, stderr) => {
-            if (error) {
-                customLog(name, `${error}`);
-            }
-            if (stderr) {
-                customLog(name, `${stderr}`);
-            }
-        })
+        try {
+            process.kill(pid, 'SIGTERM');
+        }
+        catch (err) {
+            customLog("process-shutdown", `Error sending SIGTERM: ${err}`);
+        }
     }
 }
 
@@ -177,12 +152,11 @@ function anyServerUsed(servers) {
 }
 
 module.exports = {
-    killTask,
     removeDuplicateSpace,
     extractNums,
     customLog,
     getElementByHtmlID,
     emitDataGlobal,
     anyServerUsed,
-    gracefulShutdown
+    gracefulShutdown: gracefulShutdown
 };

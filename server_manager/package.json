@@ -10,11 +10,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.7.7",
     "ctrlc-windows": "^2.1.0",
     "express": "^4.21.0",
-    "minecraft-status": "^1.1.0",
+    "gamedig": "^5.3.2",
     "socket.io": "^4.7.5",
-    "tree-kill": "^1.2.2",
-    "axios": "^1.7.7"
+    "tree-kill": "^1.2.2"
+  },
+  "overrides": {
+    "fast-xml-parser": "^5.5.9"
   }
 }

@@ -4,6 +4,7 @@ const {statuses} = require("../globals.js");
 const {execFile, spawn} = require("child_process");
 const ABaseServer = require("./ABaseServer.js");
 const {gracefulShutdown} = require("../../utils/custom-utils");
+const treeKill = require("tree-kill");
 
 /**
  * @desc Abstract class for executable servers.
@@ -25,12 +26,13 @@ class AStartableServer extends ABaseServer {
      * @param {number} startingTime - Maximum time the server can be starting in minutes.
      * @param {boolean} cmd - Whether to use cmd to launch the server.
      * @param {boolean} debug - Whether to launch server in debug mode (prints server console).
+     * @param {number} shutdownTimeout - Timeout in seconds for graceful shutdown.
      * server will be considered offline. Has to be enabled with startServer(`true`).
      */
     constructor({
                     port, htmlID, displayName, type,
                     filePath, workingDir, startArgs, startingTime = 2,
-                    cmd = false, debug = false
+                    cmd = false, debug = false, shutdownTimeout = 30
                 }) {
         super({port, htmlID, displayName, type});
 
@@ -55,12 +57,18 @@ class AStartableServer extends ABaseServer {
             this.filePath = workingDir;
             this.workingDir = workingDir;
         }
+
         this.type = type;
         this.currProcess = null;
         this.startArgs = startArgs;
         this.startingTime = startingTime;
         this.cmd = cmd;
         this.debug = debug;
+
+        // Two-phase stop state
+        this._stopTimer = null;
+        this._stopAttempted = false;
+        this.gracefulStopTimeout = shutdownTimeout * 1000;
     }
 
     /**
@@ -96,7 +104,6 @@ class AStartableServer extends ABaseServer {
             this.currProcess.stderr.pipe(process.stderr);
         }
 
-
         if (timeout) {
             this.startingTimeout();
         }
@@ -115,28 +122,119 @@ class AStartableServer extends ABaseServer {
                 customLog(this.htmlID, `Server startup timed out, assuming offline`);
                 this.status = statuses.OFFLINE;
             }
-        }, this.startingTime * 60 * 1000)
+        }, this.startingTime * 60 * 1000);
     }
 
     /**
-     * @desc Kill server process and change status.
+     * @desc Returns the console command to gracefully stop the server.
+     * Override in subclasses. Return null to skip graceful stop.
+     * @returns {string|null}
+     */
+    getStopCommand() {
+        return null;
+    }
+
+    /**
+     * @desc Sends a graceful shutdown signal via the platform-appropriate method.
+     * Override for servers that need custom graceful behavior (Stop with a command is handled by
+     * `stopServer()` and `getStopCommand()`). This is specifically for closing without stdin.
+     */
+    shutdownProcess() {
+        if (this.currProcess) {
+            customLog(this.htmlID, `Passing server process to shutdown util`);
+            gracefulShutdown(this.currProcess.pid);
+        }
+    }
+
+    /**
+     * @desc Kills the server immediately.
+     * Override in subclasses that require special kill behavior.
+     */
+    forceKill() {
+        if (this.currProcess) {
+            treeKill(this.currProcess.pid, 'SIGKILL', (err) => {
+                if (err) customLog(this.htmlID, `Force kill error: ${err.message}`);
+            });
+        }
+    }
+
+    /**
+     * @desc Stops the server using a two-phase approach:
+     * - First call: attempts graceful stop via getStopCommand(), starts a timer.
+     * - Second call (or timer expiry): hand off to shut down process util.
      */
     stopServer() {
-        customLog(this.htmlID, `Stopping server`);
+        if (!this.currProcess) {
+            customLog(this.htmlID, `Server process is not attached, cannot stop`);
+            return;
+        }
+
         this.status = statuses.STOPPING;
-        gracefulShutdown(this.currProcess.pid);
+        const stopCmd = this.getStopCommand();
+
+        // First call: attempt graceful stop
+        if (!this._stopAttempted) {
+            customLog(this.htmlID, `Stopping server (attempting console command)`);
+            this._stopAttempted = true;
+
+            // Try command
+            try {
+                this.sendCommand(stopCmd);
+            }
+            catch (e) {
+                customLog(this.htmlID, `Console stop unavailable (${e.message})`);
+            }
+
+            // Schedule shutdown handoff
+            this._stopTimer = setTimeout(() => {
+                customLog(this.htmlID, `Console stop timed out or unavailable, falling back to process shutdown`);
+                this._clearStopState();
+                this.shutdownProcess();
+            }, this.gracefulStopTimeout);
+
+        }
+        // Second call: kill process
+        else {
+            customLog(this.htmlID, `Stopping server (force)`);
+            this._clearStopState();
+            this.forceKill();
+        }
     }
 
     /**
-     * @desc Sends command to the server process (only works if processes stdin is available).
-     * @param {string} command - Command that is to be sent to the server.
+     * @desc Clears two-phase stop state. Called on forced kill or process exit.
+     */
+    _clearStopState() {
+        if (this._stopTimer) {
+            clearTimeout(this._stopTimer);
+            this._stopTimer = null;
+        }
+        this._stopAttempted = false;
+    }
+
+    /**
+     * @desc Sends command to the server process.
+     * @param {string} command
+     * @throws {Error} If stdin is not available or not writable.
      */
     sendCommand(command) {
-        if (this.currProcess !== null) {
+        if (this.currProcess?.stdin?.writable) {
             this.currProcess.stdin.write(command + "\n");
         }
         else {
-            customLog(this.htmlID, `"${command}" command failed, server process is null`);
+
+            if (!this.currProcess) {
+                throw new Error("process is null");
+            }
+            if (!this.currProcess.stdin.writable) {
+                throw new Error("stdin is not available or not writable");
+            }
+            const reason = !this.currProcess
+                ? "process is null"
+                : "stdin is not available or not writable";
+            const msg = `"${command}" command failed — ${reason}`;
+            customLog(this.htmlID, msg);
+            throw new Error(msg); // lets stopServer fall back immediately
         }
     }
 
@@ -146,27 +244,38 @@ class AStartableServer extends ABaseServer {
      */
     exitCheck(process) {
         process.on('error', (error) => {
-            const errorStr = String(error);
-            customLog(this.htmlID, errorStr);
+            customLog(this.htmlID, String(error));
+            this._clearStopState();
             this.status = statuses.OFFLINE;
         });
 
-        if (process.stderr != null) {
-            process.stderr.on('data', (err) => {
-                customLog(this.htmlID, err)
-            });
-        }
-
         process.on('exit', () => {
             customLog(this.htmlID, `Server process ended`);
+            this._clearStopState();
             this.status = statuses.OFFLINE;
-        })
+            this.currProcess = null;
+        });
     }
 
     /**
      * @desc Handle output stream for this classes process.
      */
-    handleOutput(process){}
+    handleOutput(process) {
+    }
+
+    toJson(additionalFields = {}) {
+        let fields = {
+            "filePath": this.filePath,
+            "workingDir": this.workingDir,
+            "startArgs": this.startArgs,
+            "startingTime": this.startingTime,
+            "cmd": this.cmd,
+            "debug": this.debug,
+            "shutdownTimeout": this.shutdownTimeout,
+            ...additionalFields
+        }
+        return super.toJson(fields);
+    }
 }
 
 module.exports = AStartableServer;

@@ -6,9 +6,13 @@ class SocketEvents {
      * @param websocket - Socket.io websocket, over which the data will be sent.
      */
     static statusResponse(websocket = getWebsocket()) {
+        let serversJson = [];
+        for (const server of servers) {
+            serversJson.push(server.toJson());
+        }
         if (websocket) {
             let data = {
-                servers: servers,
+                servers: serversJson,
                 discordBots: discordBots,
             };
             websocket.emit(Events.STATUS_RESPONSE, data);

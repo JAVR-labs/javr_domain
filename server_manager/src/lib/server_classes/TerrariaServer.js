@@ -3,6 +3,7 @@ const {serverTypes} = require("../globals.js");
 const {customLog} = require("../../utils/custom-utils.js");
 const path = require("node:path");
 const fs = require("node:fs");
+const {platform} = require("node:os");
 
 /**
  * @desc Class representing TmodLoader server instance.
@@ -33,7 +34,11 @@ class TerrariaServer extends AStartableServer {
                     maxPlayers = 0, configPath, worldPath, motd, useSteam = false, lobbyType = "friends"
                 }) {
         if (workingDir) {
-            filePath = path.join(workingDir, "TerrariaServer.exe");
+            let serverName = "TerrariaServer";
+            if (platform() === "win32") {
+                serverName += "exe"
+            }
+            filePath = path.join(workingDir, serverName);
         }
         super({
             port, htmlID, displayName, type: serverTypes.TERRARIA,
@@ -111,6 +116,10 @@ class TerrariaServer extends AStartableServer {
         }
     }
 
+    getStopCommand() {
+        return "exit";
+    }
+
     /**
      * @desc Reads the config at given path.
      * @param filePath - path to config to read.
@@ -129,13 +138,13 @@ class TerrariaServer extends AStartableServer {
     createArgs(startArgs) {
         let args = [];
         if (this.port && !startArgs.includes("-port")) args.push("-port", this.port.toString());
-        if (this.useSteam && !startArgs.includes("-steam") ) {
+        if (this.useSteam && !startArgs.includes("-steam")) {
             args.push("-steam");
             if (this.lobbyType) args.push("-" + this.lobbyType);
         }
         if (this.configPath && !startArgs.includes("-config")) args.push("-config", this.configPath);
         if (this.worldPath && !startArgs.includes("-world")) args.push("-world", this.worldPath);
-        if (this.motd &&!startArgs.includes("-motd")) args.push("-motd", this.motd);
+        if (this.motd && !startArgs.includes("-motd")) args.push("-motd", this.motd);
         return [...startArgs, ...args];
     }
 }

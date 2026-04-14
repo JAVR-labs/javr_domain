@@ -59,6 +59,10 @@ class TmodloaderServer extends TerrariaServer {
             currentArgs.unshift("-server");
         }
 
+        if (this.port && !currentArgs.includes("-port")) {
+            currentArgs.push("-port", this.port.toString());
+        }
+
         if (this.modpack && !currentArgs.includes("-modpack")) {
             currentArgs.push("-modpack", this.modpack);
         }
@@ -135,18 +139,27 @@ class TmodloaderServer extends TerrariaServer {
         customLog(this.htmlID, "Stopping TmodLoader server");
         this.status = statuses.STOPPING;
 
-        // Try graceful first
-        if (this.currProcess) {
-            gracefulShutdown(this.currProcess.pid);
-
-            // Fallback to tree-kill after a delay or if immediate kill is needed
-            // (Process structure: BusyBox -> Bash -> DotNet -> Server)
-            treeKill(this.currProcess.pid, 'SIGTERM', (err) => {
-                if (err) {
-                    customLog(this.htmlID, `Tree-kill warning: ${err.message}`);
-                }
-            });
+        // Try console first
+        try {
+            this.sendCommand("exit");
         }
+        catch (e) {
+            customLog(this.htmlID, "Error sending exit command: " + e);
+        }
+
+        // Fallback to graceful shutdown if console doesn't work
+        setTimeout(() => {
+            if (this.currProcess) {
+                gracefulShutdown(this.currProcess.pid);
+
+                // Fallback to force kill
+                treeKill(this.currProcess.pid, 'SIGTERM', (err) => {
+                    if (err) {
+                        customLog(this.htmlID, `Tree-kill warning: ${err.message}`);
+                    }
+                });
+            }
+        }, 1000 * 30)
     }
 
     handleOutput(process) {
