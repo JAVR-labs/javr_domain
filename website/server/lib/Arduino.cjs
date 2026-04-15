@@ -1,5 +1,5 @@
 const {SerialPort, ReadlineParser} = require("serialport");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {ArduinoEvents, websiteIO} = require('@server-lib/globals.js');
 
