@@ -37,6 +37,7 @@
   "_moduleAliases": {
     "@": "./",
     "@server-utils": "./server/utils",
-    "@server-lib": "./server/lib"
+    "@server-lib": "./server/lib",
+    "@shared": "../shared"
   }
 }

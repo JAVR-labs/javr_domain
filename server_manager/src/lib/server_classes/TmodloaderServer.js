@@ -1,6 +1,6 @@
 const TerrariaServer = require("./TerrariaServer.js");
 const {serverTypes, statuses} = require("../globals.js");
-const {customLog, gracefulShutdown} = require("../../utils/custom-utils.js");
+const {customLog, gracefulShutdown} = require("@javr-domain/shared/Logger.js");
 const os = require("node:os");
 const {spawn} = require("node:child_process");
 const path = require("node:path");

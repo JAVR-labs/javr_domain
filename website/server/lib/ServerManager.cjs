@@ -1,7 +1,7 @@
 const socketIOClient = require("socket.io-client");
 const {wake} = require("wake_on_lan");
 const ServerList = require("@server-lib/ServerList.cjs");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {Statuses, Events} = require("@server-lib/globals.js");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
