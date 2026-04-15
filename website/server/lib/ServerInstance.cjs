@@ -12,22 +12,25 @@ const {
 } = require("@server-lib/globals.js");
 const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const ServerManagerList = require("@server-lib/ServerManagerList.cjs");
-const {ConfigManager, ConfigTypes} = require("@server-lib/ConfigManager.cjs");
+const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {getBoardByPID} = require("@server-utils/arduino-utils.cjs");
 const ServerList = require("@server-lib/ServerList.cjs");
 const ServerManager = require("@server-lib/ServerManager.cjs");
+const {ConfigTypes} = require("@server-lib/ConfigSettings");
 
 /**
  * @class ServerInstance
  * @desc Object class for easier management of the main website server. Can have only one instance.
- * @property instance - After first initialisation stores class instance. It is returned if class has already been initialised.
+ * @property instance - After first initialisation stores class instance. It is returned if the class has already been initialised.
  */
 class ServerInstance {
     // Holds static reference to an initialised instance
     static #instance;
+    // ConfigManager
+    #configManager;
     // Type of next environment
     #processEnv;
     // Holds next app
@@ -46,7 +49,7 @@ class ServerInstance {
     constructor({
                     name: name,
                     managers: managers,
-                    port: port,
+                    port: port = 3000,
                     autostart: autostart,
                     processEnv: processEnv,
                     rules: rules = defaultRules
@@ -57,6 +60,8 @@ class ServerInstance {
             return ServerInstance.#instance;
         }
         ServerInstance.#instance = this;
+
+        this.#configManager = new ConfigManager();
 
         // Initialise serverManagers
         for (const manager of managers) {
@@ -124,9 +129,9 @@ class ServerInstance {
             // Services
             //
 
-            // Respond to clients data request
+            // Respond to clients' data request
             clientSocket.on(Events.STATUS_REQUEST, () => {
-                // Send back servers statuses
+                // Send back server statuses
                 if (clientSocket) {
                     customLog(this.name, `Status request received from ${ip}`);
 
@@ -319,7 +324,7 @@ class ServerInstance {
             // ZeroTier
             //
 
-            const zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
+            const zeroTierConfig = this.#configManager.getConfig(ConfigTypes.zeroTierConfig);
             const zeroTierToken = zeroTierConfig.token;
 
             //Handling ZeroTier Request
@@ -367,9 +372,6 @@ class ServerInstance {
                             "authorized": data.authorized
                         }
                 };
-
-                //Sending data to zero tier
-                let zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
 
                 if (zeroTierConfig.network) {
                     let postConfig = {
@@ -424,7 +426,7 @@ class ServerInstance {
         customLog(this.name, "Starting Discord bots");
 
         // Get bots and their parameters from config file
-        const discordBotsConfig = ConfigManager.getConfig(ConfigTypes.discordBots);
+        const discordBotsConfig = this.#configManager.getConfig(ConfigTypes.discordBots);
 
         // Temporary variable holding local bots
         let discordBots = [];

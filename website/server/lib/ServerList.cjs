@@ -1,4 +1,4 @@
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const {serversWithHosts, serverList} = require("@server-lib/globals.js");
 
 const logName = "Server_List";

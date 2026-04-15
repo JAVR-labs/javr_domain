@@ -1,6 +1,6 @@
 const AStartableServer = require("./AStartableServer.js");
 const {serverTypes} = require("../globals.js");
-const {customLog} = require("../../utils/custom-utils.js");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const path = require("node:path");
 const fs = require("node:fs");
 const {platform} = require("node:os");

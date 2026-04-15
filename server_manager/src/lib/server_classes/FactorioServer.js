@@ -1,6 +1,6 @@
 const AStartableServer = require("./AStartableServer.js");
 const {serverTypes, statuses} = require("../globals.js");
-const {customLog, gracefulShutdown} = require("../../utils/custom-utils.js");
+const {customLog, gracefulShutdown} = require("@javr-domain/shared/Logger.js");
 const treeKill = require("tree-kill");
 const fs = require("node:fs");
 const {execFile} = require("node:child_process");
