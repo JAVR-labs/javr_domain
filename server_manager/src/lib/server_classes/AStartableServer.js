@@ -1,4 +1,4 @@
-const {customLog} = require("../../utils/custom-utils.js");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const path = require("node:path");
 const {statuses} = require("../globals.js");
 const {execFile, spawn} = require("child_process");

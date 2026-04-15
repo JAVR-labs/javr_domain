@@ -1,6 +1,7 @@
-require("node:fs");
+const fs = require("node:fs");
 const {statuses} = require("../lib/globals.js");
 const {ctrlc} = require('ctrlc-windows');
+const {customLog} = require("@javr-domain/shared/Logger.js");
 
 /**
  * @description

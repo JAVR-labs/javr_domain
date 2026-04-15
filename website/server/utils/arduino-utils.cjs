@@ -1,6 +1,6 @@
 const {SerialPort} = require("serialport");
 const {arduinoBoards, ArduinoEvents} = require("@server-lib/globals.js");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const {usb} = require("usb");
 const ArduinoBoard = require("@server-lib/Arduino.cjs");
 

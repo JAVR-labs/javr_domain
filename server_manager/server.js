@@ -2,6 +2,7 @@
 const express = require('express');
 const socketIO = require('socket.io');
 const {exec} = require('child_process');
+const os = require("node:os");
 
 // Local imports
 const {
@@ -9,28 +10,29 @@ const {
     serverClasses,
 } = require("./src/lib/CustomServers");
 const {
-    customLog,
     getElementByHtmlID,
     emitDataGlobal,
     anyServerUsed
 } = require('./src/utils/custom-utils.js');
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const {DiscordBot} = require('./src/lib/DiscordBot.js');
 let {servers, Events, sockets, discordBots, setWebsocket} = require('./src/lib/globals.js');
 const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
+const SocketEvents = require("./src/lib/SocketEvents.js");
 
 //
 // INIT
 //
 
 // Create ConfigManager instance
-const {ConfigManager, configTypes} = require("./src/lib/ConfigManager.js");
-const os = require("node:os");
-const SocketEvents = require("./src/lib/SocketEvents.js");
+const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
+const {ConfigTypes, FileTemplates} = require("./src/lib/ConfigSettings.js");
+const configManager = new ConfigManager(ConfigTypes, FileTemplates);
 // Load configs
-ConfigManager.loadConfigs();
+configManager.loadConfigs();
 // Get loaded configs
-const serversInfo = ConfigManager.getConfig(configTypes.serversInfo);
-const discordBotsConfig = ConfigManager.getConfig(configTypes.discordBots);
+const serversInfo = configManager.getConfig(ConfigTypes.serversInfo);
+const discordBotsConfig = configManager.getConfig(ConfigTypes.discordBots);
 // ID of sleep timer timeout
 let sleepTimerID;
 // Time of inactivity after which server manager goes to sleep
