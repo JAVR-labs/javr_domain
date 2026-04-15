@@ -2,13 +2,15 @@ const net = require("node:net");
 const dgram = require("node:dgram");
 
 const {statuses} = require("../globals.js");
-const {customLog} = require("../../utils/custom-utils.js");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const SocketEvents = require("../SocketEvents.js");
+const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
 
 /**
  * @desc Abstract base class for all server types.
  */
 class ABaseServer {
+    _configManager;
     /**
      * @param {number} port - Port of the server.
      * @param {string} htmlID - HtmlID, unique name used for identification.
@@ -29,6 +31,7 @@ class ABaseServer {
         this.type = type;
         this.maxPlayers = maxPlayers;
         this.currPlayers = [];
+        this._configManager = new ConfigManager();
     }
 
     // Run check periodically to see if the server is still up
