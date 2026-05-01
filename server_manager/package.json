@@ -1,5 +1,5 @@
 {
-  "name": "server_manager",
+  "name": "javr-domain-manager",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@javr-domain/shared": "*",
     "axios": "^1.15.0",
     "ctrlc-windows": "^2.1.0",
     "express": "^4.21.0",

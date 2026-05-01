@@ -1,0 +1,8 @@
+{
+  "name": "@javr-domain/shared",
+  "version": "1.0.0",
+  "exports": {
+    "./Logger.js": "./Logger.js",
+    "./ConfigManager.cjs": "./ConfigManager.cjs"
+  }
+}

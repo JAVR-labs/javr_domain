@@ -1,6 +1,6 @@
 {
-  "name": "website",
-  "version": "0.1.0",
+  "name": "javr-domain-website",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "node server.cjs",
@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@javr-domain/shared": "*",
     "axios": "^1.15.0",
     "framer-motion": "^11.5.4",
     "module-alias": "^2.2.3",

@@ -10,7 +10,6 @@ const {
     setWebsiteIO,
     serverManagers, defaultRules
 } = require("@server-lib/globals.js");
-const ApiHandler = require("@server-lib/ApiHandler.cjs");
 const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
 const {customLog} = require("@server-utils/custom-utils.cjs");
@@ -85,7 +84,6 @@ class ServerInstance {
         await this.#app.prepare().then(() => {
             // Start the http server
             this.websiteServer = createServer((req, res) => {
-                // noinspection JSIgnoredPromiseFromCall
                 handle(req, res);
             });
 
@@ -95,10 +93,9 @@ class ServerInstance {
                 customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
             });
 
-            // Initializer functions
+            // Initialiser functions
             this.createSocket();
             this.startDiscordBots();
-            // this.initialiseAPI();
         });
     }
 
@@ -470,21 +467,6 @@ class ServerInstance {
                 }
             }
         }
-    }
-
-    /**
-     * @desc Initialises `APIHandler` and creates API endpoints.
-     */
-    initialiseAPI() {
-        customLog(this.name, 'Initialising API');
-        // Initialise api-handler
-        const apiHandler = new ApiHandler(this.#app);
-
-
-        // Create api-endpoint for generation of new tokens
-        apiHandler.newTokenEndpoint();
-        // Create endpoints for all existing tokens
-        apiHandler.createEndpoints();
     }
 }
 

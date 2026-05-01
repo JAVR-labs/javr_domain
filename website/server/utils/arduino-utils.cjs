@@ -35,7 +35,7 @@ function initialiseBoards(arduinos) {
 
 
     // Handle new boards
-    usb.on('attach', (device) => {
+    usb.on('attach', () => {
         registerBoards(arduinos);
     });
     // Handle disconnects

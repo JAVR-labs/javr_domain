@@ -1,5 +1,5 @@
-const {customLog} = require("@server-utils/custom-utils.cjs");
-const {discordBotsWithHosts, discordBots, serverManagers} = require('@server-lib/globals.js');
+const {customLog} = require("@javr-domain/shared/Logger.js");
+const {discordBotsWithHosts, discordBots} = require('@server-lib/globals.js');
 
 const logName = "Discord_Bot_List";
 
