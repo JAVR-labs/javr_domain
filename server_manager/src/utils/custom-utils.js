@@ -37,7 +37,7 @@ function gracefulShutdown(pid) {
 
 //Find element by id in given list
 const getElementByHtmlID = (list, serverID) => list.filter((s) => {
-    return s.htmlID === serverID
+    return s.htmlID === serverID;
 })[0];
 
 // Sending servers statuses
@@ -45,24 +45,32 @@ function emitDataGlobal(socket, event, data) {
     socket.emit(event, data);
 }
 
-function anyServerUsed(servers) {
-    let emptyServers = 0;
+function getUsedServers(servers) {
+    let usedServers = [];
+
     for (let server of servers) {
-        if (server.status === statuses.OFFLINE) {
-            emptyServers++;
+        // If server is starting or stopping, it is in use
+        if (server.status === statuses.STARTING || server.status === statuses.STOPPING) {
+            usedServers.push(server.htmlID);
         }
-        else if (server.status === statuses.ONLINE && server.currPlayers) {
-            if (server.currPlayers.length === 0) {
-                emptyServers++;
+        // If server is online, check if it has players
+        if (server.status === statuses.ONLINE) {
+            // If server does not support player list assume it is used as long as it's online
+            if (!server.maxPlayers) {
+                usedServers.push(server.htmlID);
+            }
+            // If it has players online
+            if (server.currPlayers && server.currPlayers.length > 0) {
+                usedServers.push(server.htmlID);
             }
         }
     }
-    return emptyServers === servers.length;
+    return usedServers;
 }
 
 module.exports = {
     getElementByHtmlID,
     emitDataGlobal,
-    anyServerUsed,
-    gracefulShutdown: gracefulShutdown
+    getUsedServers,
+    gracefulShutdown
 };

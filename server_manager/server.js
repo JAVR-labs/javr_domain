@@ -1,18 +1,15 @@
 // External imports
 const express = require('express');
 const socketIO = require('socket.io');
-const {exec} = require('child_process');
-const os = require("node:os");
-
+require("node:os");
 // Local imports
 const {
     statuses,
-    serverClasses,
+    serverClasses
 } = require("./src/lib/CustomServers");
 const {
     getElementByHtmlID,
-    emitDataGlobal,
-    anyServerUsed
+    emitDataGlobal
 } = require('./src/utils/custom-utils.js');
 const {customLog} = require("@javr-domain/shared/Logger.js");
 const {DiscordBot} = require('./src/lib/DiscordBot.js');
@@ -20,29 +17,28 @@ let {servers, Events, sockets, discordBots, setWebsocket} = require('./src/lib/g
 const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
 const SocketEvents = require("./src/lib/SocketEvents.js");
 
-//
-// INIT
-//
 
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+// Assign id-name to server (for logs)
+const serverIDName = 'JAVR_Server_Manager';
 // Create ConfigManager instance
 const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
 const {ConfigTypes, FileTemplates} = require("./src/lib/ConfigSettings.js");
 const configManager = new ConfigManager(ConfigTypes, FileTemplates);
+// Load environment type
+const environment = process.env.ENVIRONMENT || 'production';
+customLog(serverIDName, `Loaded environment: ${environment}`);
 // Load configs
 configManager.loadConfigs();
 // Get loaded configs
 const serversInfo = configManager.getConfig(ConfigTypes.serversInfo);
 const discordBotsConfig = configManager.getConfig(ConfigTypes.discordBots);
-// ID of sleep timer timeout
-let sleepTimerID;
-// Time of inactivity after which server manager goes to sleep
-const timeToSleep = 10;
-// If conditions are met, starts sleep timer, runs every minute
-sleepConditionDetector();
 
-//
-// Services
-//
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ─── SERVICES ────────────────────────────────────────────────────────────────
 
 // Load Discord bots
 for (const botName in discordBotsConfig) {
@@ -54,7 +50,7 @@ for (const botName in discordBotsConfig) {
         emitFunc: emitDataGlobal,
         // FIXME: This is temporary work-around, will fix with general refactor
         io: () => io,
-        discordBots: () => discordBots,
+        discordBots: () => discordBots
     });
     // Create bot instance and add it to the list
     discordBots.push(new DiscordBot(constructorParams));
@@ -63,29 +59,37 @@ for (const botName in discordBotsConfig) {
 // Load servers
 for (const type in serversInfo) {
     for (const server of serversInfo[type]) {
-        servers.push(new serverClasses[type](server))
+        servers.push(new serverClasses[type](server));
     }
 }
 
-//
-// Networking
-//
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ─── SLEEP MANAGER ───────────────────────────────────────────────────────────
+
+const SleepManager = require('./src/lib/SleepManager.js');
+const sleepAfterMinutes = parseFloat(process.env.SLEEP_AFTER_MINUTES);
+SleepManager.init(servers, sleepAfterMinutes, environment);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ─── NETWORKING ──────────────────────────────────────────────────────────────
 
 // Setup express
 const app = express();
 app.use(express.static('public'));
 
-// Assign id-name to server (for logs)
-const siteIDName = 'JAVR_Server_Manager';
 
 // Start server
 const server = app.listen(3001, () => {
-    customLog(siteIDName, `Server started on port ${server.address().port}`);
+    customLog(serverIDName, `Server started on port ${server.address().port}`);
 
     // Start checking ports for every defined server
     for (const server of servers) {
         customLog(server.htmlID, "Starting statusMonitor");
-        server.statusMonitor()
+        server.statusMonitor();
     }
 });
 
@@ -101,15 +105,15 @@ io.on(Events.CONNECTION, socket => {
     let ip = socket.handshake.address.split(':');
     ip = ip[ip.length - 1];
 
-    customLog(siteIDName, `Established connection with website server`);
+    customLog(serverIDName, `Established connection with website server`);
 
-    // Respond to clients data request
+    // Respond to clients' data request
     socket.on(Events.STATUS_REQUEST, () => {
-        // Send back servers statuses
+        // Send back servers' statuses
         if (socket) {
-            customLog(siteIDName, `Status request received from ${ip}`);
+            customLog(serverIDName, `Status request received from ${ip}`);
             SocketEvents.statusResponse();
-            customLog(siteIDName, `Status update sent ${ip}`);
+            customLog(serverIDName, `Status update sent ${ip}`);
         }
     });
 
@@ -122,7 +126,7 @@ io.on(Events.CONNECTION, socket => {
 
         if (server && server instanceof AStartableServer) {
             if (server.status === statuses.OFFLINE) {
-                cancelSleepTimer();
+                SleepManager.refreshSleepTimer();
                 server.startServer();
             }
             else {
@@ -144,6 +148,7 @@ io.on(Events.CONNECTION, socket => {
 
         if (server && server instanceof AStartableServer) {
             if (server.status !== statuses.OFFLINE) {
+                SleepManager.refreshSleepTimer();
                 server.stopServer();
             }
             else {
@@ -169,7 +174,7 @@ io.on(Events.CONNECTION, socket => {
         if (bot) {
             // Check if bot isn't already on
             if (bot.status === statuses.OFFLINE) {
-                cancelSleepTimer();
+                SleepManager.refreshSleepTimer();
                 bot.start();
             }
             else {
@@ -185,7 +190,7 @@ io.on(Events.CONNECTION, socket => {
 
     // Requested server stop
     socket.on(Events.STOP_DBOT_REQUEST, (botID, socketID) => {
-        customLog(siteIDName, `${ip} requested bot stop`);
+        customLog(serverIDName, `${ip} requested bot stop`);
 
         // Search for bot in the list
         const bot = getElementByHtmlID(discordBots, botID);
@@ -200,6 +205,7 @@ io.on(Events.CONNECTION, socket => {
 
             // Check if conditions to stop the bot are met
             if ((botOnline || lavaOnline) && !(botStarting || botStopping)) {
+                SleepManager.refreshSleepTimer();
                 bot.stop();
             }
             else {
@@ -217,73 +223,14 @@ io.on(Events.CONNECTION, socket => {
 
     // Request manager stop
     socket.on(Events.STOP_SERVER_MANAGER_REQUEST, (socketID) => {
-        customLog(siteIDName, `${ip} requested manager stop`);
+        customLog(serverIDName, `${ip} requested manager stop`);
 
-        sleepSystem(socket, socketID);
+        SleepManager.sleepSystem(socket, socketID);
     });
 
     socket.on(Events.DISCONNECT, () => {
         sockets = sockets.filter(s => s !== socket);
-    })
+    });
 });
 
-
-//
-// Auto-sleep
-//
-
-// Check if any server is used every minute
-function sleepConditionDetector() {
-    setInterval(() => {
-        if (anyServerUsed(servers) && !sleepTimerID) {
-            sleepTimerID = sleepTimer();
-        }
-    }, 60 * 1000);
-}
-
-// If they are not used for configured time enter sleep
-function sleepTimer() {
-    return setTimeout(() => {
-        // If servers are still offline
-        if (anyServerUsed(servers)) {
-            customLog(siteIDName, `No servers were used for ${timeToSleep} minutes, entering sleep`);
-            cancelSleepTimer();
-            sleepSystem();
-        }
-        else {
-            cancelSleepTimer()
-        }
-    }, timeToSleep * 60 * 1000);
-}
-
-/**
- * @desc Enter command to sleep
- * @param socket - Socket.io of the website that forwarded sleep request.
- * @param clientSocketID - ID of the client's socket with the website.
- */
-function sleepSystem(socket, clientSocketID) {
-    const command = os.platform() === 'win32'
-        // Windows command
-        ? 'rundll32.exe powrprof.dll, SetSuspendState Sleep'
-        // Linux command
-        : 'pm-suspend';
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            customLog(siteIDName, `Error putting system to sleep: ${error.message}`);
-            if (socket)
-                SocketEvents.requestFailed(socket, {
-                    socketID: clientSocketID,
-                    text: "Manager nie chce spać (coś nie działa)"
-                });
-        }
-        if (stderr) {
-            customLog(siteIDName, `Error output: ${stderr}`);
-        }
-    });
-}
-
-function cancelSleepTimer() {
-    if (sleepTimerID)
-        clearTimeout(sleepTimerID);
-    sleepTimerID = undefined;
-}
+// ─────────────────────────────────────────────────────────────────────────────
