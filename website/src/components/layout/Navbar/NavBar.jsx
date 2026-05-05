@@ -8,6 +8,14 @@ function NavList() {
     const router = useRouter();
     const { pathname } = router;
 
+    const handleLogout = async (e) => {
+        e.preventDefault();
+        const response = await fetch('/api/logout', { method: 'POST' });
+        if (response.ok) {
+            router.push('/login');
+        }
+    };
+
     const navOps = Object.keys(urls).map((page) => {
         // If user is already on the website
         if (urls[page] === pathname) {
@@ -29,8 +37,17 @@ function NavList() {
 
     return (
         <div className="collapse navbar-collapse ms-3" id="navbarNav">
-            <ul className='navbar-nav'>
+            <ul className='navbar-nav w-100'>
                 {navOps}
+                {pathname !== '/login' ? (
+                    <li className="nav-item ms-auto">
+                        <a className={`${styles.customNavLink} nav-link`} href="#" onClick={handleLogout}>Logout</a>
+                    </li>
+                ) : (
+                    <li className="nav-item ms-auto">
+                        <a className={`${styles.customNavLink} nav-link ${pathname === '/login' ? styles.inactive : ''}`} href="/login">Login</a>
+                    </li>
+                )}
             </ul>
         </div>
     );
