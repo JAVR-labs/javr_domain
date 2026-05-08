@@ -10,7 +10,6 @@ const {
     setWebsiteIO,
     serverManagers, defaultRules
 } = require("@server-lib/globals.js");
-const ApiHandler = require("@server-lib/ApiHandler.cjs");
 const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
 const {customLog} = require("@server-utils/custom-utils.cjs");
@@ -99,7 +98,6 @@ class ServerInstance {
         // Initializer functions
         await this.createSocket();
         this.startDiscordBots();
-        // this.initialiseAPI();
     }
 
 
@@ -112,8 +110,8 @@ class ServerInstance {
         const websiteIO = socketIO(this.websiteServer, {
             cors: {
                 origin: '*',
-                methods: ['GET', 'POST'],
-            },
+                methods: ['GET', 'POST']
+            }
         });
 
         setWebsiteIO(websiteIO);
@@ -214,7 +212,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -235,7 +233,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -302,7 +300,7 @@ class ServerInstance {
                         bot.start();
                     else {
                         customLog(this.name, "Request denied, bot not offline");
-                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline")
+                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline");
                     }
                 }
                 else {
@@ -340,7 +338,7 @@ class ServerInstance {
                     }
                     else {
                         SocketEvents.requestFailed(clientSocket, "Bot nie jest online");
-                        customLog(this.name, "Request failed, bot not online")
+                        customLog(this.name, "Request failed, bot not online");
                     }
                 }
                 else {
@@ -388,12 +386,12 @@ class ServerInstance {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
                             SocketEvents.ztErrorResponse(websiteIO, `${error.response.statusText} ${error.response.status}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                     SocketEvents.ztErrorResponse(websiteIO, `Brak konfiguracji dla ZeroTier.`);
                 }
             });
-
 
 
             //Sending user edit form to ZeroTier api
@@ -431,7 +429,8 @@ class ServerInstance {
                         .catch((error) => {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                 }
 
@@ -442,20 +441,20 @@ class ServerInstance {
             //
 
             clientSocket.on(Events.ARDUINO_MODIFY_LIGHT, (arduinoPID, lightParams) => {
-                if (this.rules.allowTerrariumLedOverride){
+                if (this.rules.allowTerrariumLedOverride) {
                     const board = getBoardByPID(arduinoPID);
                     if (board) {
                         lightParams["override"] = Number(lightParams["override"]);
                         board.setLight(lightParams);
                     }
                     else {
-                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`)
+                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`);
                     }
                 }
                 else {
                     SocketEvents.requestNotAllowed(clientSocket);
                 }
-            })
+            });
         });
     }
 
@@ -502,7 +501,7 @@ class ServerInstance {
                         server.startServer();
                     }
                     else {
-                        customLog(this.name, `Failed to start ${name}: Server not executable`)
+                        customLog(this.name, `Failed to start ${name}: Server not executable`);
                     }
                 }
                 else {
@@ -510,21 +509,6 @@ class ServerInstance {
                 }
             }
         }
-    }
-
-    /**
-     * @desc Initialises `APIHandler` and creates API endpoints.
-     */
-    initialiseAPI() {
-        customLog(this.name, 'Initialising API');
-        // Initialise api-handler
-        const apiHandler = new ApiHandler(this.#app);
-
-
-        // Create api-endpoint for generation of new tokens
-        apiHandler.newTokenEndpoint();
-        // Create endpoints for all existing tokens
-        apiHandler.createEndpoints();
     }
 }
 
