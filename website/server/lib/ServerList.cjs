@@ -1,5 +1,5 @@
 const {customLog} = require("@server-utils/custom-utils.cjs");
-const {serversWithHosts, mana, serverList} = require("@server-lib/globals.js");
+const {serversWithHosts, serverList} = require("@server-lib/globals.js");
 
 const logName = "Server_List";
 
@@ -31,9 +31,9 @@ class ServerList {
         serverList.length = 0;
         // Extract individual servers and add them to servers
         for (const serverArr of serverListArr) {
-            if (serverArr != null){
+            if (serverArr != null) {
                 for (const server of serverArr) {
-                    serverList.push(server)
+                    serverList.push(server);
                 }
             }
         }
@@ -74,7 +74,7 @@ class ServerList {
      * @returns {*} - server instance of given htmlID.
      */
     static getServerByHtmlID = (serverID) => serverList.filter((s) => {
-        return s.htmlID === serverID
+        return s.htmlID === serverID;
     })[0];
 }
 

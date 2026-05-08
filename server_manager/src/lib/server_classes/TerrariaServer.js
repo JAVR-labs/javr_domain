@@ -36,7 +36,7 @@ class TerrariaServer extends AStartableServer {
         if (workingDir) {
             let serverName = "TerrariaServer";
             if (platform() === "win32") {
-                serverName += "exe"
+                serverName += "exe";
             }
             filePath = path.join(workingDir, serverName);
         }

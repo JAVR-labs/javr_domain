@@ -82,7 +82,7 @@ function TableElement(serviceData) {
                 )
             }
         </>
-    )
+    );
 }
 
 function ManagerList() {
@@ -137,7 +137,7 @@ function ServerList() {
                     </tbody>
                 </table>
             </>
-        )
+        );
     }
 }
 
@@ -166,7 +166,7 @@ function DiscordBotList() {
                     </tbody>
                 </table>
             </>
-        )
+        );
     }
 }
 
