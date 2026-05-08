@@ -1,0 +1,11 @@
+packages:
+  - 'shared'
+  - 'server_manager'
+  - 'website'
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@serialport/bindings-cpp': true
+  'sharp': true
+  'unrs-resolver': true
+  'usb': true
