@@ -1,0 +1,26 @@
+# Dependency directories
+**/node_modules/
+.pnpm-store/
+
+# Git and configuration
+**/.git/
+**/.gitignore
+**/Dockerfile
+**/docker-compose.yml
+**/.env*
+
+# Build and cache outputs
+**/.next/
+**/build/
+**/.turbo/
+**/.cache/
+
+# Development / OS garbage
+**/.DS_Store
+Thumbs.db
+
+# Project specific
+eslint.config.mjs
+start.py
+logs/
+configs/
