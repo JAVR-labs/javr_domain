@@ -10,7 +10,6 @@ const {
     setWebsiteIO,
     serverManagers, defaultRules
 } = require("@server-lib/globals.js");
-const ApiHandler = require("@server-lib/ApiHandler.cjs");
 const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
 const {customLog} = require("@server-utils/custom-utils.cjs");
@@ -82,81 +81,39 @@ class ServerInstance {
         const handle = this.#app.getRequestHandler();
 
         // Ready the app
-        await this.#app.prepare();
+        await this.#app.prepare().then(() => {
+            // Start the http server
+            this.websiteServer = createServer((req, res) => {
+                handle(req, res);
+            });
 
-        // Start the http server
-        this.websiteServer = createServer((req, res) => {
-            // noinspection JSIgnoredPromiseFromCall
-            handle(req, res);
+            // Listen on the port
+            this.websiteServer.listen(this.port, (err) => {
+                if (err) throw err;
+                customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
+            });
+
+            // Initializer functions
+            this.createSocket();
+            this.startDiscordBots();
         });
-
-        // Listen on the port
-        this.websiteServer.listen(this.port, (err) => {
-            if (err) throw err;
-            customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
-        });
-
-        // Initializer functions
-        await this.createSocket();
-        this.startDiscordBots();
-        // this.initialiseAPI();
     }
 
 
     /**
      * @desc Starts websocket connections.
      */
-    async createSocket() {
+    createSocket() {
         customLog(this.name, 'Creating websocket');
         // noinspection JSValidateTypes
         const websiteIO = socketIO(this.websiteServer, {
             cors: {
                 origin: '*',
-                methods: ['GET', 'POST'],
-            },
+                methods: ['GET', 'POST']
+            }
         });
 
         setWebsiteIO(websiteIO);
-
-        websiteIO.use(async (socket, next) => {
-            const cookieHeader = socket.handshake.headers.cookie;
-            if (!cookieHeader) {
-                customLog(this.name, 'Socket auth failed: no cookie');
-                return next(new Error('Brak autoryzacji'));
-            }
-
-            const cookies = Object.fromEntries(
-                cookieHeader.split(';').map(c => {
-                    const [key, ...val] = c.trim().split('=');
-                    return [key.trim(), val.join('=')];
-                })
-            );
-
-            const token = cookies['authtoken'];
-            if (!token) {
-                customLog(this.name, 'Socket auth failed: no authtoken cookie');
-                return next(new Error('Brak tokena autoryzacyjnego'));
-            }
-
-            try {
-                const config = ConfigManager.getConfig(ConfigTypes.websiteConfig);
-                const managers = config?.managers || [];
-                const manager = managers[0] || {ip: 'localhost', port: 3001};
-
-                const response = await axios.post(
-                    `http://${manager.ip}:${manager.port}/verify-token`,
-                    {token}
-                );
-
-                socket.data.user = response.data.user;
-                next();
-            }
-            catch (err) {
-                const message = err.response?.data?.message || err.message;
-                customLog(this.name, `Socket auth failed: ${message}`);
-                next(new Error(message));
-            }
-        });
 
         // When client connects to the server
         websiteIO.on(Events.CONNECTION, clientSocket => {
@@ -214,7 +171,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -235,7 +192,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -302,7 +259,7 @@ class ServerInstance {
                         bot.start();
                     else {
                         customLog(this.name, "Request denied, bot not offline");
-                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline")
+                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline");
                     }
                 }
                 else {
@@ -340,7 +297,7 @@ class ServerInstance {
                     }
                     else {
                         SocketEvents.requestFailed(clientSocket, "Bot nie jest online");
-                        customLog(this.name, "Request failed, bot not online")
+                        customLog(this.name, "Request failed, bot not online");
                     }
                 }
                 else {
@@ -388,12 +345,12 @@ class ServerInstance {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
                             SocketEvents.ztErrorResponse(websiteIO, `${error.response.statusText} ${error.response.status}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                     SocketEvents.ztErrorResponse(websiteIO, `Brak konfiguracji dla ZeroTier.`);
                 }
             });
-
 
 
             //Sending user edit form to ZeroTier api
@@ -431,7 +388,8 @@ class ServerInstance {
                         .catch((error) => {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                 }
 
@@ -442,20 +400,20 @@ class ServerInstance {
             //
 
             clientSocket.on(Events.ARDUINO_MODIFY_LIGHT, (arduinoPID, lightParams) => {
-                if (this.rules.allowTerrariumLedOverride){
+                if (this.rules.allowTerrariumLedOverride) {
                     const board = getBoardByPID(arduinoPID);
                     if (board) {
                         lightParams["override"] = Number(lightParams["override"]);
                         board.setLight(lightParams);
                     }
                     else {
-                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`)
+                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`);
                     }
                 }
                 else {
                     SocketEvents.requestNotAllowed(clientSocket);
                 }
-            })
+            });
         });
     }
 
@@ -502,7 +460,7 @@ class ServerInstance {
                         server.startServer();
                     }
                     else {
-                        customLog(this.name, `Failed to start ${name}: Server not executable`)
+                        customLog(this.name, `Failed to start ${name}: Server not executable`);
                     }
                 }
                 else {
@@ -510,21 +468,6 @@ class ServerInstance {
                 }
             }
         }
-    }
-
-    /**
-     * @desc Initialises `APIHandler` and creates API endpoints.
-     */
-    initialiseAPI() {
-        customLog(this.name, 'Initialising API');
-        // Initialise api-handler
-        const apiHandler = new ApiHandler(this.#app);
-
-
-        // Create api-endpoint for generation of new tokens
-        apiHandler.newTokenEndpoint();
-        // Create endpoints for all existing tokens
-        apiHandler.createEndpoints();
     }
 }
 
