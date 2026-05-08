@@ -18,6 +18,6 @@
     "tree-kill": "^1.2.2"
   },
   "overrides": {
-    "fast-xml-parser": "^5.5.9"
+    "fast-xml-parser": "^5.7.0"
   }
 }
