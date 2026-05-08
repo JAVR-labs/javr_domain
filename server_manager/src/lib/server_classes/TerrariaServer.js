@@ -47,7 +47,8 @@ class TerrariaServer extends AStartableServer {
 
         this.configPath = configPath;
         // Prioritize reading max players from config
-        let configMaxPlayers = this.getPlayerLimit(this.configPath);
+        let configMaxPlayers;
+        if (configPath) this.getPlayerLimit(this.configPath);
         this.maxPlayers = configMaxPlayers ? configMaxPlayers : maxPlayers;
 
         this.currPlayers = [];
