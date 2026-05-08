@@ -1,5 +1,5 @@
 const {customLog} = require("@server-utils/custom-utils.cjs");
-const {discordBotsWithHosts, discordBots, serverManagers} = require('@server-lib/globals.js');
+const {discordBotsWithHosts, discordBots} = require('@server-lib/globals.js');
 
 const logName = "Discord_Bot_List";
 
@@ -31,14 +31,14 @@ class DiscordBotList {
         for (const botArr of botListArr) {
             if (botArr != null){
                 for (const bot of botArr) {
-                    discordBots.push(bot)
+                    discordBots.push(bot);
                 }
             }
         }
     }
 
     static getBotByHtmlID = (botID) => discordBots.filter((s) => {
-        return s.htmlID === botID
+        return s.htmlID === botID;
     })[0];
 
     static getBotsHtmlIDs(bots) {
