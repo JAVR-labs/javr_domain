@@ -1,0 +1,14 @@
+services:
+  website:
+    image: javr-domain:alpine-latest
+    build:
+      context: ..
+      dockerfile: website/Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - ZEROTIER_KEY=${ZEROTIER_KEY}
+    ports:
+      - "80:3002"
+    volumes:
+      - ./configs:/app/configs
+    restart: always
