@@ -1,0 +1,7 @@
+**/.env*
+**/Dockerfile
+**/docker-compose.yml
+**/eslint.config.mjs
+**/start.py
+**/logs
+**/configs

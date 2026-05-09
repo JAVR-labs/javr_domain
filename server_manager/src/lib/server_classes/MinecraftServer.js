@@ -1,8 +1,8 @@
 const AStartableServer = require("./AStartableServer.js");
 const {serverTypes, statuses} = require("../globals.js");
-const {ConfigManager, configTypes} = require("../ConfigManager.js");
+const {ConfigTypes} = require("../ConfigSettings.js");
 const SocketEvents = require("../SocketEvents.js");
-const {customLog} = require("../../utils/custom-utils.js");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const {GameDig} = require('gamedig');
 const treeKill = require("tree-kill");
 const {spawn} = require("child_process");
@@ -41,7 +41,7 @@ class MinecraftServer extends AStartableServer {
 
         this.minecraftVersion = minecraftVersion;
         this.failedQuery = 0;
-        MinecraftServer.minecraftJavaVer = ConfigManager.getConfig(configTypes.minecraftJavaVer);
+        MinecraftServer.minecraftJavaVer = this._configManager.getConfig(ConfigTypes.minecraftJavaVer);
 
         // This will be compared against to determine when the status has to be updated on client
         this.lastStatus = this.status;

@@ -10,25 +10,27 @@ const {
     setWebsiteIO,
     serverManagers, defaultRules
 } = require("@server-lib/globals.js");
-const ApiHandler = require("@server-lib/ApiHandler.cjs");
 const {DiscordBot} = require("./DiscordBot.cjs");
 const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const ServerManagerList = require("@server-lib/ServerManagerList.cjs");
-const {ConfigManager, ConfigTypes} = require("@server-lib/ConfigManager.cjs");
+const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {getBoardByPID} = require("@server-utils/arduino-utils.cjs");
 const ServerList = require("@server-lib/ServerList.cjs");
 const ServerManager = require("@server-lib/ServerManager.cjs");
+const {ConfigTypes} = require("@server-lib/ConfigSettings");
 
 /**
  * @class ServerInstance
  * @desc Object class for easier management of the main website server. Can have only one instance.
- * @property instance - After first initialisation stores class instance. It is returned if class has already been initialised.
+ * @property instance - After first initialisation stores class instance. It is returned if the class has already been initialised.
  */
 class ServerInstance {
     // Holds static reference to an initialised instance
     static #instance;
+    // ConfigManager
+    #configManager;
     // Type of next environment
     #processEnv;
     // Holds next app
@@ -47,7 +49,7 @@ class ServerInstance {
     constructor({
                     name: name,
                     managers: managers,
-                    port: port,
+                    port: port = 3000,
                     autostart: autostart,
                     processEnv: processEnv,
                     rules: rules = defaultRules
@@ -58,6 +60,8 @@ class ServerInstance {
             return ServerInstance.#instance;
         }
         ServerInstance.#instance = this;
+
+        this.#configManager = new ConfigManager();
 
         // Initialise serverManagers
         for (const manager of managers) {
@@ -85,7 +89,6 @@ class ServerInstance {
         await this.#app.prepare().then(() => {
             // Start the http server
             this.websiteServer = createServer((req, res) => {
-                // noinspection JSIgnoredPromiseFromCall
                 handle(req, res);
             });
 
@@ -98,7 +101,6 @@ class ServerInstance {
             // Initializer functions
             this.createSocket();
             this.startDiscordBots();
-            // this.initialiseAPI();
         });
     }
 
@@ -112,8 +114,8 @@ class ServerInstance {
         const websiteIO = socketIO(this.websiteServer, {
             cors: {
                 origin: '*',
-                methods: ['GET', 'POST'],
-            },
+                methods: ['GET', 'POST']
+            }
         });
 
         setWebsiteIO(websiteIO);
@@ -127,9 +129,9 @@ class ServerInstance {
             // Services
             //
 
-            // Respond to clients data request
+            // Respond to clients' data request
             clientSocket.on(Events.STATUS_REQUEST, () => {
-                // Send back servers statuses
+                // Send back server statuses
                 if (clientSocket) {
                     customLog(this.name, `Status request received from ${ip}`);
 
@@ -174,7 +176,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -195,7 +197,7 @@ class ServerInstance {
                 }
                 else {
                     customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`)
+                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
                 }
             });
 
@@ -262,7 +264,7 @@ class ServerInstance {
                         bot.start();
                     else {
                         customLog(this.name, "Request denied, bot not offline");
-                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline")
+                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline");
                     }
                 }
                 else {
@@ -300,7 +302,7 @@ class ServerInstance {
                     }
                     else {
                         SocketEvents.requestFailed(clientSocket, "Bot nie jest online");
-                        customLog(this.name, "Request failed, bot not online")
+                        customLog(this.name, "Request failed, bot not online");
                     }
                 }
                 else {
@@ -322,7 +324,7 @@ class ServerInstance {
             // ZeroTier
             //
 
-            const zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
+            const zeroTierConfig = this.#configManager.getConfig(ConfigTypes.zeroTierConfig);
             const zeroTierToken = zeroTierConfig.token;
 
             //Handling ZeroTier Request
@@ -348,12 +350,12 @@ class ServerInstance {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
                             SocketEvents.ztErrorResponse(websiteIO, `${error.response.statusText} ${error.response.status}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                     SocketEvents.ztErrorResponse(websiteIO, `Brak konfiguracji dla ZeroTier.`);
                 }
             });
-
 
 
             //Sending user edit form to ZeroTier api
@@ -370,9 +372,6 @@ class ServerInstance {
                             "authorized": data.authorized
                         }
                 };
-
-                //Sending data to zero tier
-                let zeroTierConfig = ConfigManager.getConfig(ConfigTypes.zeroTierConfig);
 
                 if (zeroTierConfig.network) {
                     let postConfig = {
@@ -391,7 +390,8 @@ class ServerInstance {
                         .catch((error) => {
                             customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
                         });
-                } else {
+                }
+                else {
                     customLog(this.name, `No ZeroTier configuration found. Skipping...`);
                 }
 
@@ -402,20 +402,20 @@ class ServerInstance {
             //
 
             clientSocket.on(Events.ARDUINO_MODIFY_LIGHT, (arduinoPID, lightParams) => {
-                if (this.rules.allowTerrariumLedOverride){
+                if (this.rules.allowTerrariumLedOverride) {
                     const board = getBoardByPID(arduinoPID);
                     if (board) {
                         lightParams["override"] = Number(lightParams["override"]);
                         board.setLight(lightParams);
                     }
                     else {
-                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`)
+                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`);
                     }
                 }
                 else {
                     SocketEvents.requestNotAllowed(clientSocket);
                 }
-            })
+            });
         });
     }
 
@@ -426,7 +426,7 @@ class ServerInstance {
         customLog(this.name, "Starting Discord bots");
 
         // Get bots and their parameters from config file
-        const discordBotsConfig = ConfigManager.getConfig(ConfigTypes.discordBots);
+        const discordBotsConfig = this.#configManager.getConfig(ConfigTypes.discordBots);
 
         // Temporary variable holding local bots
         let discordBots = [];
@@ -462,7 +462,7 @@ class ServerInstance {
                         server.startServer();
                     }
                     else {
-                        customLog(this.name, `Failed to start ${name}: Server not executable`)
+                        customLog(this.name, `Failed to start ${name}: Server not executable`);
                     }
                 }
                 else {
@@ -470,21 +470,6 @@ class ServerInstance {
                 }
             }
         }
-    }
-
-    /**
-     * @desc Initialises `APIHandler` and creates API endpoints.
-     */
-    initialiseAPI() {
-        customLog(this.name, 'Initialising API');
-        // Initialise api-handler
-        const apiHandler = new ApiHandler(this.#app);
-
-
-        // Create api-endpoint for generation of new tokens
-        apiHandler.newTokenEndpoint();
-        // Create endpoints for all existing tokens
-        apiHandler.createEndpoints();
     }
 }
 

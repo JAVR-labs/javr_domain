@@ -1,0 +1,18 @@
+# Basic
+node_modules
+**/.gitignore
+**/.git
+**/Dockerfile
+**/docker-compose.yml
+**/.env*
+.pnpm-store
+
+# Front-specific
+**/dist
+**/.next
+eslint.config.mjs
+start.py
+
+# Custom
+logs
+configs
