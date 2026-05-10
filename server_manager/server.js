@@ -71,7 +71,76 @@ for (const type in serversInfo) {
 
 // Setup express
 const app = express();
+app.use(express.json());
 app.use(express.static('public'));
+
+const bcrypt = require('bcryptjs');
+const db = require('./src/lib/db.js');
+
+app.post('/login', async (req, res) => {
+    const {nick, password} = req.body;
+    
+    try {
+        const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [nick]);
+        const user = result.rows[0];
+
+        if (user) {
+            const passwordMatch = bcrypt.compareSync(password, user.password_hash);
+            if (passwordMatch) {
+                customLog(siteIDName, `Login successful for user: ${nick}`);
+                return res.status(200).json({message: "Success"});
+            } else {
+                customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
+            }
+        } else {
+            customLog(siteIDName, `Login failed for user: ${nick} - User not found or inactive`);
+        }
+    } catch (err) {
+        customLog(siteIDName, `Login error: ${err.message}`);
+        return res.status(500).json({message: "Błąd bazy danych"});
+    }
+
+    customLog(siteIDName, `Login failed for user: ${nick}`);
+    return res.status(401).json({message: "Nie znaleziono loginu albo hasło jest nie poprawne!"});
+});
+
+// User Management Endpoints
+app.get('/users', async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, username, is_active, created_at FROM users ORDER BY username ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({error: err.message});
+    }
+});
+
+app.post('/users', async (req, res) => {
+    const {username, password} = req.body;
+    if (!username || !password) {
+        return res.status(400).json({message: "Missing fields"});
+    }
+
+    try {
+        const passwordHash = bcrypt.hashSync(password, 10);
+        await db.query(
+            'INSERT INTO users (username, password_hash) VALUES ($1, $2)',
+            [username, passwordHash]
+        );
+        res.status(201).json({message: "User created"});
+    } catch (err) {
+        res.status(500).json({error: err.message});
+    }
+});
+
+app.delete('/users/:id', async (req, res) => {
+    const {id} = req.params;
+    try {
+        await db.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({message: "User deleted"});
+    } catch (err) {
+        res.status(500).json({error: err.message});
+    }
+});
 
 // Assign id-name to server (for logs)
 const siteIDName = 'JAVR_Server_Manager';
