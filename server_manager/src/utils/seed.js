@@ -5,7 +5,7 @@ async function seed() {
   console.log("Starting database seeding...");
 
   const users = [
-    { username: "admin", password: "adminpassword", is_active: true },
+    { username: process.env.FIRST_USER_USERNAME, password: process.env.FIRST_USER_PASSWORD, is_active: true },
   ];
 
   try {

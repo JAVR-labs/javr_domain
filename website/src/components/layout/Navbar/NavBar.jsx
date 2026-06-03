@@ -43,11 +43,7 @@ function NavList() {
                     <li className="nav-item ms-auto">
                         <a className={`${styles.customNavLink} nav-link`} href="#" onClick={handleLogout}>Logout</a>
                     </li>
-                ) : (
-                    <li className="nav-item ms-auto">
-                        <a className={`${styles.customNavLink} nav-link ${pathname === '/login' ? styles.inactive : ''}`} href="/login">Login</a>
-                    </li>
-                )}
+                ) : ''}
             </ul>
         </div>
     );
