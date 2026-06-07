@@ -1,7 +1,9 @@
 // External imports
+require('dotenv').config();
 const express = require('express');
 const socketIO = require('socket.io');
 const {exec} = require('child_process');
+const jwt = require('jsonwebtoken');
 
 // Local imports
 const {
@@ -77,6 +79,19 @@ app.use(express.static('public'));
 const bcrypt = require('bcryptjs');
 const db = require('./src/lib/db.js');
 
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
 app.post('/login', async (req, res) => {
     const {nick, password} = req.body;
     
@@ -88,7 +103,8 @@ app.post('/login', async (req, res) => {
             const passwordMatch = bcrypt.compareSync(password, user.password_hash);
             if (passwordMatch) {
                 customLog(siteIDName, `Login successful for user: ${nick}`);
-                return res.status(200).json({message: "Success"});
+                const token = jwt.sign({ nick }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+                return res.status(200).json({message: "Success", token});
             } else {
                 customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
             }
@@ -105,7 +121,7 @@ app.post('/login', async (req, res) => {
 });
 
 // User Management Endpoints
-app.get('/users', async (req, res) => {
+app.get('/users', authenticateToken, async (req, res) => {
     try {
         const result = await db.query('SELECT id, username, is_active, created_at FROM users ORDER BY username ASC');
         res.json(result.rows);
@@ -114,7 +130,7 @@ app.get('/users', async (req, res) => {
     }
 });
 
-app.post('/users', async (req, res) => {
+app.post('/users', authenticateToken, async (req, res) => {
     const {username, password} = req.body;
     if (!username || !password) {
         return res.status(400).json({message: "Missing fields"});
@@ -132,7 +148,7 @@ app.post('/users', async (req, res) => {
     }
 });
 
-app.delete('/users/:id', async (req, res) => {
+app.delete('/users/:id', authenticateToken, async (req, res) => {
     const {id} = req.params;
     try {
         await db.query('DELETE FROM users WHERE id = $1', [id]);
@@ -140,6 +156,48 @@ app.delete('/users/:id', async (req, res) => {
     } catch (err) {
         res.status(500).json({error: err.message});
     }
+});
+
+app.post("/users/:id/password", authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const { id } = req.params;
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  try {
+    const userResult = await db.query(
+      "SELECT id, password_hash FROM users WHERE id = $1",
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+    const ok = bcrypt.compareSync(currentPassword, user.password_hash);
+
+    if (!ok) {
+      return res.status(400).json({ message: "Incorrect current password" });
+    }
+
+    const newHash = bcrypt.hashSync(newPassword, 10);
+
+    await db.query(
+      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      [newHash, id]
+    );
+
+    return res.status(200).json({ message: "Password updated" });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
 // Assign id-name to server (for logs)

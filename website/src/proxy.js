@@ -9,7 +9,6 @@ export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
   const isPublicPath = pathname === "/login" || pathname === "/api/login";
-
   const isStaticAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/img/") ||
@@ -20,7 +19,7 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get("auth_token")?.value;
+  const token = req.cookies.get("authtoken")?.value;
 
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
@@ -29,13 +28,9 @@ export async function proxy(req) {
   try {
     await jwtVerify(token, SECRET);
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.delete("auth_token");
+    response.cookies.delete("authtoken");
     return response;
   }
 }
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
