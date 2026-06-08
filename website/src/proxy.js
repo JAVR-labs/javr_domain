@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import jwt from "jsonwebtoken";
 
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "super-secret-key-change-me-in-production",
+  process.env.JWT_SECRET,
 );
 
 export async function proxy(req) {
@@ -26,7 +26,7 @@ export async function proxy(req) {
   }
 
   try {
-    await jwtVerify(token, SECRET);
+    await jwt.verify(token, SECRET);
     return NextResponse.next();
   } catch {
     const response = NextResponse.redirect(new URL("/login", req.url));

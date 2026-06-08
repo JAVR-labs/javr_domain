@@ -90,7 +90,6 @@ export default function Login() {
               )}
 
               <div className="mb-4">
-                {/* <label htmlFor="nick" className="form-label text-white"></label> */}
                 <input
                   type="text"
                   className={`form-control bg-dark text-white border-secondary ${errors.nick ? "is-invalid" : ""}`}
@@ -107,10 +106,6 @@ export default function Login() {
               </div>
 
               <div className="mb-4">
-                {/* <label
-                  htmlFor="password"
-                  className="form-label text-white"
-                ></label> */}
                 <input
                   type="password"
                   className={`form-control bg-dark text-white border-secondary ${errors.password ? "is-invalid" : ""}`}

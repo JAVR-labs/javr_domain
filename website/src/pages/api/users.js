@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import { ConfigManager, ConfigTypes } from "@/server/lib/ConfigManager.cjs";
+import { customLog } from "@/server/utils/custom-utils.cjs";
 
 export default async function handler(req, res) {
   const { authtoken } = req.cookies || {};
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    jwt.verify(authtoken, process.env.JWT_SECRET || "fallback-secret");
+    jwt.verify(authtoken, process.env.JWT_SECRET);
   } catch {
     return res.status(401).json({ message: "Nieprawidłowy token" });
   }
@@ -45,11 +46,11 @@ export default async function handler(req, res) {
       const { id, currentPassword, password, confirmPassword } = req.body;
 
       if (!id || !currentPassword || !password || !confirmPassword) {
-        return res.status(400).json({ message: "Missing fields" });
+        return res.status(400).json({ message: "Brakujące dane" });
       }
 
       if (password !== confirmPassword) {
-        return res.status(400).json({ message: "Passwords do not match" });
+        return res.status(400).json({ message: "Hasła nie są takie same" });
       }
 
       const response = await axios.post(
@@ -65,9 +66,9 @@ export default async function handler(req, res) {
       return res.status(200).json(response.data);
     }
 
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ message: "Metoda nie dozwolona" });
   } catch (error) {
-    console.error("User management error:", error.response?.status, error.response?.data || error.message);
+    customLog("Error" ,`User management error: ${error.response?.status}, ${error.response?.data || error.message}`);
     return res.status(error.response?.status || 500).json(
       error.response?.data || { message: "Błąd połączenia z serwerem managerem" }
     );

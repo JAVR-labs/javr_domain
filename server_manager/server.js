@@ -85,7 +85,7 @@ const authenticateToken = (req, res, next) => {
 
     if (token == null) return res.sendStatus(401);
 
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();
@@ -103,7 +103,7 @@ app.post('/login', async (req, res) => {
             const passwordMatch = bcrypt.compareSync(password, user.password_hash);
             if (passwordMatch) {
                 customLog(siteIDName, `Login successful for user: ${nick}`);
-                const token = jwt.sign({ nick }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+                const token = jwt.sign({ nick }, process.env.JWT_SECRET, { expiresIn: '7d' });
                 return res.status(200).json({message: "Success", token});
             } else {
                 customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
@@ -133,7 +133,7 @@ app.get('/users', authenticateToken, async (req, res) => {
 app.post('/users', authenticateToken, async (req, res) => {
     const {username, password} = req.body;
     if (!username || !password) {
-        return res.status(400).json({message: "Missing fields"});
+        return res.status(400).json({message: "Brakujące Pola"});
     }
 
     try {
@@ -142,7 +142,7 @@ app.post('/users', authenticateToken, async (req, res) => {
             'INSERT INTO users (username, password_hash) VALUES ($1, $2)',
             [username, passwordHash]
         );
-        res.status(201).json({message: "User created"});
+        res.status(201).json({message: "Użytkownik utworzony"});
     } catch (err) {
         res.status(500).json({error: err.message});
     }
@@ -152,7 +152,7 @@ app.delete('/users/:id', authenticateToken, async (req, res) => {
     const {id} = req.params;
     try {
         await db.query('DELETE FROM users WHERE id = $1', [id]);
-        res.json({message: "User deleted"});
+        res.json({message: "Użytkownik usunięty"});
     } catch (err) {
         res.status(500).json({error: err.message});
     }
@@ -163,11 +163,11 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   if (!currentPassword || !newPassword || !confirmPassword) {
-    return res.status(400).json({ message: "Missing fields" });
+    return res.status(400).json({ message: "Brakujące Pola" });
   }
 
   if (newPassword !== confirmPassword) {
-    return res.status(400).json({ message: "Passwords do not match" });
+    return res.status(400).json({ message: "Hasła nie są takie same" });
   }
 
   try {
@@ -177,14 +177,14 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Użytkownik nie znaleziony" });
     }
 
     const user = userResult.rows[0];
     const ok = bcrypt.compareSync(currentPassword, user.password_hash);
 
     if (!ok) {
-      return res.status(400).json({ message: "Incorrect current password" });
+      return res.status(400).json({ message: "Niepoprawne aktualne hasło" });
     }
 
     const newHash = bcrypt.hashSync(newPassword, 10);
@@ -194,9 +194,9 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
       [newHash, id]
     );
 
-    return res.status(200).json({ message: "Password updated" });
+    return res.status(200).json({ message: "Hasło zaktualizowane" });
   } catch (err) {
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Błąd serwera" });
   }
 });
 

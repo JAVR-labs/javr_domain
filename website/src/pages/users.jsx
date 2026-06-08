@@ -157,36 +157,7 @@ export default function Users() {
             </div>
           )}
 
-          {!editingUserId && (
-            <div className="card bg-dark text-white mb-4 p-3 border-secondary">
-              <h4>Dodaj nowego użytkownika</h4>
-              <form onSubmit={handleCreateUser}>
-                <div className="mb-3">
-                  <label className="form-label">Nazwa użytkownika (nick)</label>
-                  <input
-                    type="text"
-                    className="form-control bg-secondary text-white border-0"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Hasło</label>
-                  <input
-                    type="password"
-                    className="form-control bg-secondary text-white border-0"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn btn-primary">Utwórz</button>
-              </form>
-            </div>
-          )}
-
-          {editingUserId && (
+          {editingUserId ? (
             <div className="card bg-dark text-white mb-4 p-3 border-secondary">
               <h4>Zmień hasło użytkownika</h4>
               <form onSubmit={handlePasswordChange}>
@@ -224,6 +195,33 @@ export default function Users() {
                   <button type="submit" className="btn btn-warning">Zapisz hasło</button>
                   <button type="button" className="btn btn-outline-light" onClick={() => setEditingUserId(null)}>Anuluj</button>
                 </div>
+              </form>
+            </div>
+          ) : (
+            <div className="card bg-dark text-white mb-4 p-3 border-secondary">
+              <h4>Dodaj nowego użytkownika</h4>
+              <form onSubmit={handleCreateUser}>
+                <div className="mb-3">
+                  <label className="form-label">Nazwa użytkownika (nick)</label>
+                  <input
+                    type="text"
+                    className="form-control bg-secondary text-white border-0"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Hasło</label>
+                  <input
+                    type="password"
+                    className="form-control bg-secondary text-white border-0"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary">Utwórz</button>
               </form>
             </div>
           )}
