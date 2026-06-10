@@ -35,8 +35,8 @@ export default async function handler(req, res) {
 
     return res.status(401).json({ message: "Nie znaleziono loginu albo hasło jest nie poprawne!" });
   } catch (error) {
-    if (error.response && error.response.status === 401) {
-      return res.status(401).json({ message: error.response.data.message });
+    if (error.response && (error.response.status === 401 || error.response.status === 429)) {
+      return res.status(error.response.status).json({ message: error.response.data.message });
     }
 
     console.error("Auth error:", error.message);

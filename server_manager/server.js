@@ -79,6 +79,23 @@ app.use(express.static('public'));
 const bcrypt = require('bcryptjs');
 const db = require('./src/lib/db.js');
 
+// Cache Limiting
+const loginAttempts = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 5;
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, attempts] of loginAttempts.entries()) {
+        const recentAttempts = attempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
+        if (recentAttempts.length === 0) {
+            loginAttempts.delete(ip);
+        } else {
+            loginAttempts.set(ip, recentAttempts);
+        }
+    }
+}, 60 * 60 * 1000);
+
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -101,6 +118,24 @@ const authenticateToken = (req, res, next) => {
 
 app.post('/login', async (req, res) => {
     const {nick, password} = req.body;
+
+    const clientIp = req.ip;
+    const now = Date.now();
+    const userAttempts = loginAttempts.get(clientIp) || [];
+    const recentAttempts = userAttempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
+
+    if (recentAttempts.length >= MAX_ATTEMPTS) {
+        const oldestAttempt = recentAttempts[0];
+        const retryAfterMs = oldestAttempt + RATE_LIMIT_WINDOW - now;
+        const retryAfterMins = Math.ceil(retryAfterMs / 60000);
+
+        return res.status(429).json({
+            message: `Zbyt wiele prób logowania. Spróbuj ponownie za ${retryAfterMins} min.`
+        });
+    }
+
+    recentAttempts.push(now);
+    loginAttempts.set(clientIp, recentAttempts);
     
     try {
         const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [nick]);
