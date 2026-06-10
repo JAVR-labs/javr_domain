@@ -83,10 +83,17 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (token == null) return res.sendStatus(401);
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.sendStatus(401);
+    }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            if (err.name === 'TokenExpiredError') {
+                return res.status(401).json({ message: 'Token Wygasł' });
+            }
+            return res.sendStatus(403);
+        }
         req.user = user;
         next();
     });
