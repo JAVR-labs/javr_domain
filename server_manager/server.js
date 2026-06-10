@@ -144,8 +144,8 @@ app.post('/login', async (req, res) => {
         if (user) {
             const passwordMatch = bcrypt.compareSync(password, user.password_hash);
             if (passwordMatch) {
-                customLog(siteIDName, `Login successful for user: ${nick}`);
-                const token = jwt.sign({ nick }, process.env.JWT_SECRET, { expiresIn: '7d' });
+                customLog(siteIDName, `Login successful for user: ${user.username} with id ${user.id}`);
+                const token = jwt.sign({sub: user.id, nick: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
                 return res.status(200).json({message: "Success", token});
             } else {
                 customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
