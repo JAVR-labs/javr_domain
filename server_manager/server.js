@@ -146,7 +146,7 @@ app.post('/login', async (req, res) => {
             if (passwordMatch) {
                 customLog(siteIDName, `Login successful for user: ${user.username} with id ${user.id}`);
                 const token = jwt.sign({sub: user.id, nick: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-                return res.status(200).json({message: "Success", token});
+                return res.status(200).json({message: "Sukces", token});
             } else {
                 customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
             }
@@ -168,7 +168,8 @@ app.get('/users', authenticateToken, async (req, res) => {
         const result = await db.query('SELECT id, username, is_active, created_at FROM users ORDER BY username ASC');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({error: err.message});
+         customLog(siteIDName, `Error when getting users: ${err.message}`);
+        res.status(500).json({error: 'Wewnętrzny błąd serwera'});
     }
 });
 
@@ -186,7 +187,8 @@ app.post('/users', authenticateToken, async (req, res) => {
         );
         res.status(201).json({message: "Użytkownik utworzony"});
     } catch (err) {
-        res.status(500).json({error: err.message});
+        customLog(siteIDName, `Error when adding user: ${err.message}`);
+        res.status(500).json({error: 'Błąd serwera'});
     }
 });
 
@@ -196,7 +198,8 @@ app.delete('/users/:id', authenticateToken, async (req, res) => {
         await db.query('DELETE FROM users WHERE id = $1', [id]);
         res.json({message: "Użytkownik usunięty"});
     } catch (err) {
-        res.status(500).json({error: err.message});
+        customLog(siteIDName, `Error when deleting user: ${err.message}`);
+        res.status(500).json({error:  'Błąd serwera'});
     }
 });
 
@@ -223,9 +226,9 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const ok = bcrypt.compareSync(currentPassword, user.password_hash);
+    const isPasswordIdentical = bcrypt.compareSync(currentPassword, user.password_hash);
 
-    if (!ok) {
+    if (!isPasswordIdentical) {
       return res.status(400).json({ message: "Niepoprawne aktualne hasło" });
     }
 
