@@ -1,7 +1,9 @@
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import axios from "axios";
 import { ConfigManager, ConfigTypes } from "@/server/lib/ConfigManager.cjs";
 import { customLog } from "@/server/utils/custom-utils.cjs";
+
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export default async function handler(req, res) {
   const { authtoken } = req.cookies || {};
@@ -11,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    jwt.verify(authtoken, process.env.JWT_SECRET);
+    jwtVerify(authtoken, secret);
   } catch {
     return res.status(401).json({ message: "Nieprawidłowy token" });
   }
@@ -68,9 +70,14 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ message: "Metoda nie dozwolona" });
   } catch (error) {
-    customLog("Error" ,`User management error: ${error.response?.status}, ${error.response?.data || error.message}`);
+    customLog(
+      "Error",
+      `User management error: ${error.response?.status}, ${error.response?.data || error.message}`,
+    );
     return res.status(error.response?.status || 500).json(
-      error.response?.data || { message: "Błąd połączenia z serwerem managerem" }
+      error.response?.data || {
+        message: "Błąd połączenia z serwerem managerem",
+      },
     );
   }
 }

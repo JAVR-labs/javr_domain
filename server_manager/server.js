@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const socketIO = require("socket.io");
 const { exec } = require("child_process");
-const jwt = require("jsonwebtoken");
+const { jwtVerify, SignJWT } = require("jose");
 const crypto = require("crypto");
 
 // Local imports
@@ -105,7 +105,10 @@ setInterval(
   60 * 60 * 1000,
 );
 
-const authenticateToken = (req, res, next) => {
+//Encode jwt Secret
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -113,16 +116,16 @@ const authenticateToken = (req, res, next) => {
     return res.sendStatus(401);
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      if (err.name === "TokenExpiredError") {
-        return res.status(401).json({ message: "Token Wygasł" });
-      }
-      return res.sendStatus(403);
-    }
-    req.user = user;
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    req.user = payload;
     next();
-  });
+  } catch (err) {
+    if (err.name === "JWTExpired") {
+      return res.status(401).json({ message: "Token Wygasł" });
+    }
+    return res.sendStatus(403);
+  }
 };
 
 app.post("/login", async (req, res) => {
@@ -164,11 +167,14 @@ app.post("/login", async (req, res) => {
         );
 
         // Create tokens
-        const accessToken = jwt.sign(
-          { sub: user.id, nick: user.username },
-          process.env.JWT_SECRET,
-          { expiresIn: "15m" },
-        );
+        const accessToken = await new SignJWT({
+          sub: user.id,
+          nick: user.username,
+        })
+          .setProtectedHeader({ alg: "HS256" })
+          .setIssuedAt()
+          .setExpirationTime("15m")
+          .sign(secret);
 
         const refreshToken = crypto.randomBytes(40).toString("hex");
         const refreshTokenHash = bcrypt.hashSync(refreshToken, 10);
@@ -235,11 +241,14 @@ app.post("/refresh", async (req, res) => {
         .json({ message: "Niepoprawny lub wygasły Refresh Token" });
     }
 
-    const accessToken = jwt.sign(
-      { sub: matchedToken.user_id, nick: matchedToken.username },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" },
-    );
+    const accessToken = await new SignJWT({
+      sub: matchedToken.user_id,
+      nick: matchedToken.username,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("15m")
+      .sign(secret);
 
     return res.status(200).json({ token: accessToken });
   } catch (err) {

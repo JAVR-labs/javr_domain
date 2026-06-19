@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { isTokenBlacklisted } from "./utils/blacklist";
 import axios from "axios";
 import { serialize } from "cookie";
@@ -41,7 +41,7 @@ export async function proxy(req) {
   }
 
   try {
-    await jwt.verify(token, SECRET);
+    await jwtVerify(token, SECRET);
     return NextResponse.next();
   } catch (err) {
     // Token verification failed (e.g., expired)
