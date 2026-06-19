@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { isTokenBlacklisted } from "./utils/blacklist";
+import axios from "axios";
+import { serialize } from "cookie";
+import { ConfigManager, ConfigTypes } from "@/server/lib/ConfigManager.cjs";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET,
-);
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
@@ -20,17 +22,68 @@ export async function proxy(req) {
   }
 
   const token = req.cookies.get("authtoken")?.value;
+  const refreshToken = req.cookies.get("refreshtoken")?.value;
 
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Function to handle redirection and cleanup
+  const redirectToLogin = () => {
+    const response = NextResponse.redirect(new URL("/login", req.url));
+    response.cookies.delete("authtoken");
+    response.cookies.delete("refreshtoken");
+    return response;
+  };
+
+  if (!token || isTokenBlacklisted(token)) {
+    // If no access token, try to refresh
+    if (refreshToken) {
+      return await tryRefresh(req, refreshToken);
+    }
+    return redirectToLogin();
   }
 
   try {
     await jwt.verify(token, SECRET);
     return NextResponse.next();
-  } catch {
-    const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.delete("authtoken");
-    return response;
+  } catch (err) {
+    // Token verification failed (e.g., expired)
+    if (refreshToken) {
+      return await tryRefresh(req, refreshToken);
+    }
+    return redirectToLogin();
   }
+}
+
+async function tryRefresh(req, refreshToken) {
+  const config = ConfigManager.getConfig(ConfigTypes.websiteConfig);
+  const managers = config?.managers || [];
+  const manager = managers[0] || { ip: "localhost", port: 3001 };
+  const refreshUrl = `http://${manager.ip}:${manager.port}/refresh`;
+
+  try {
+    const response = await axios.post(refreshUrl, { refreshToken });
+
+    if (response.status === 200) {
+      const newToken = response.data.token;
+
+      const nextResponse = NextResponse.next();
+
+      const cookie = serialize("authtoken", newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60, // 15 minutes
+        path: "/",
+      });
+
+      nextResponse.headers.append("Set-Cookie", cookie);
+      return nextResponse;
+    }
+  } catch (error) {
+    console.error("Refresh failed:", error.message);
+  }
+
+  // If refresh fails, go to login
+  const loginResponse = NextResponse.redirect(new URL("/login", req.url));
+  loginResponse.cookies.delete("authtoken");
+  loginResponse.cookies.delete("refreshtoken");
+  return loginResponse;
 }

@@ -19,29 +19,44 @@ export default async function handler(req, res) {
     const response = await axios.post(authUrl, { nick, password });
 
     if (response.status === 200) {
-      const token = response.data.token;
+      const { token, refreshToken } = response.data;
 
-      const cookie = serialize("authtoken", token, {
+      const accessTokenCookie = serialize("authtoken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 15 * 60, // 15 minutes
         path: "/",
       });
 
-      res.setHeader("Set-Cookie", cookie);
+      const refreshTokenCookie = serialize("refreshtoken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: "/",
+      });
+
+      res.setHeader("Set-Cookie", [accessTokenCookie, refreshTokenCookie]);
       return res.status(200).json({ message: "Success" });
     }
 
-    return res.status(401).json({ message: "Nie znaleziono loginu albo hasło jest nie poprawne!" });
+    return res
+      .status(401)
+      .json({ message: "Nie znaleziono loginu albo hasło jest nie poprawne!" });
   } catch (error) {
-    if (error.response && (error.response.status === 401 || error.response.status === 429)) {
-      return res.status(error.response.status).json({ message: error.response.data.message });
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 429)
+    ) {
+      return res
+        .status(error.response.status)
+        .json({ message: error.response.data.message });
     }
 
     console.error("Auth error:", error.message);
     return res.status(500).json({
-      message: "Błąd połączenia z serwerem autoryzacji (Server Manager)",
+      message: "Błąd połączenia z serwerem",
     });
   }
 }

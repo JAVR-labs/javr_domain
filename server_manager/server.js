@@ -1,23 +1,27 @@
 // External imports
-require('dotenv').config();
-const express = require('express');
-const socketIO = require('socket.io');
-const {exec} = require('child_process');
-const jwt = require('jsonwebtoken');
+require("dotenv").config();
+const express = require("express");
+const socketIO = require("socket.io");
+const { exec } = require("child_process");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 // Local imports
+const { statuses, serverClasses } = require("./src/lib/CustomServers");
 const {
-    statuses,
-    serverClasses,
-} = require("./src/lib/CustomServers");
-const {
-    customLog,
-    getElementByHtmlID,
-    emitDataGlobal,
-    anyServerUsed
-} = require('./src/utils/custom-utils.js');
-const {DiscordBot} = require('./src/lib/DiscordBot.js');
-let {servers, Events, sockets, discordBots, setWebsocket} = require('./src/lib/globals.js');
+  customLog,
+  getElementByHtmlID,
+  emitDataGlobal,
+  anyServerUsed,
+} = require("./src/utils/custom-utils.js");
+const { DiscordBot } = require("./src/lib/DiscordBot.js");
+let {
+  servers,
+  Events,
+  sockets,
+  discordBots,
+  setWebsocket,
+} = require("./src/lib/globals.js");
 const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
 
 //
@@ -25,7 +29,7 @@ const AStartableServer = require("./src/lib/server_classes/AStartableServer.js")
 //
 
 // Create ConfigManager instance
-const {ConfigManager, configTypes} = require("./src/lib/ConfigManager.js");
+const { ConfigManager, configTypes } = require("./src/lib/ConfigManager.js");
 const os = require("node:os");
 const SocketEvents = require("./src/lib/SocketEvents.js");
 // Load configs
@@ -46,25 +50,25 @@ sleepConditionDetector();
 
 // Load Discord bots
 for (const botName in discordBotsConfig) {
-    // Load initial parameters from config
-    let constructorParams = discordBotsConfig[botName];
+  // Load initial parameters from config
+  let constructorParams = discordBotsConfig[botName];
 
-    // Add missing parameters
-    Object.assign(constructorParams, {
-        emitFunc: emitDataGlobal,
-        // FIXME: This is temporary work-around, will fix with general refactor
-        io: () => io,
-        discordBots: () => discordBots,
-    });
-    // Create bot instance and add it to the list
-    discordBots.push(new DiscordBot(constructorParams));
+  // Add missing parameters
+  Object.assign(constructorParams, {
+    emitFunc: emitDataGlobal,
+    // FIXME: This is temporary work-around, will fix with general refactor
+    io: () => io,
+    discordBots: () => discordBots,
+  });
+  // Create bot instance and add it to the list
+  discordBots.push(new DiscordBot(constructorParams));
 }
 
 // Load servers
 for (const type in serversInfo) {
-    for (const server of serversInfo[type]) {
-        servers.push(new serverClasses[type](server))
-    }
+  for (const server of serversInfo[type]) {
+    servers.push(new serverClasses[type](server));
+  }
 }
 
 //
@@ -74,133 +78,217 @@ for (const type in serversInfo) {
 // Setup express
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static("public"));
 
-const bcrypt = require('bcryptjs');
-const db = require('./src/lib/db.js');
+const bcrypt = require("bcryptjs");
+const db = require("./src/lib/db.js");
 
 // Cache Limiting
 const loginAttempts = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 5;
 
-setInterval(() => {
+setInterval(
+  () => {
     const now = Date.now();
     for (const [ip, attempts] of loginAttempts.entries()) {
-        const recentAttempts = attempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
-        if (recentAttempts.length === 0) {
-            loginAttempts.delete(ip);
-        } else {
-            loginAttempts.set(ip, recentAttempts);
-        }
+      const recentAttempts = attempts.filter(
+        (t) => now - t < RATE_LIMIT_WINDOW,
+      );
+      if (recentAttempts.length === 0) {
+        loginAttempts.delete(ip);
+      } else {
+        loginAttempts.set(ip, recentAttempts);
+      }
     }
-}, 60 * 60 * 1000);
+  },
+  60 * 60 * 1000,
+);
 
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.sendStatus(401);
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.sendStatus(401);
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({ message: "Token Wygasł" });
+      }
+      return res.sendStatus(403);
     }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                return res.status(401).json({ message: 'Token Wygasł' });
-            }
-            return res.sendStatus(403);
-        }
-        req.user = user;
-        next();
-    });
+    req.user = user;
+    next();
+  });
 };
 
-app.post('/login', async (req, res) => {
-    const {nick, password} = req.body;
+app.post("/login", async (req, res) => {
+  const { nick, password } = req.body;
 
-    const clientIp = req.ip;
-    const now = Date.now();
-    const userAttempts = loginAttempts.get(clientIp) || [];
-    const recentAttempts = userAttempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
+  const clientIp = req.ip;
+  const now = Date.now();
+  const userAttempts = loginAttempts.get(clientIp) || [];
+  const recentAttempts = userAttempts.filter(
+    (t) => now - t < RATE_LIMIT_WINDOW,
+  );
 
-    if (recentAttempts.length >= MAX_ATTEMPTS) {
-        const oldestAttempt = recentAttempts[0];
-        const retryAfterMs = oldestAttempt + RATE_LIMIT_WINDOW - now;
-        const retryAfterMins = Math.ceil(retryAfterMs / 60000);
+  if (recentAttempts.length >= MAX_ATTEMPTS) {
+    const oldestAttempt = recentAttempts[0];
+    const retryAfterMs = oldestAttempt + RATE_LIMIT_WINDOW - now;
+    const retryAfterMins = Math.ceil(retryAfterMs / 60000);
 
-        return res.status(429).json({
-            message: `Zbyt wiele prób logowania. Spróbuj ponownie za ${retryAfterMins} min.`
+    return res.status(429).json({
+      message: `Zbyt wiele prób logowania. Spróbuj ponownie za ${retryAfterMins} min.`,
+    });
+  }
+
+  recentAttempts.push(now);
+  loginAttempts.set(clientIp, recentAttempts);
+
+  try {
+    const result = await db.query(
+      "SELECT * FROM users WHERE username = $1 AND is_active = true",
+      [nick],
+    );
+    const user = result.rows[0];
+
+    if (user) {
+      const passwordMatch = bcrypt.compareSync(password, user.password_hash);
+      if (passwordMatch) {
+        customLog(
+          siteIDName,
+          `Login successful for user: ${user.username} with id ${user.id}`,
+        );
+
+        // Create tokens
+        const accessToken = jwt.sign(
+          { sub: user.id, nick: user.username },
+          process.env.JWT_SECRET,
+          { expiresIn: "15m" },
+        );
+
+        const refreshToken = crypto.randomBytes(40).toString("hex");
+        const refreshTokenHash = bcrypt.hashSync(refreshToken, 10);
+
+        // Store refresh token in DB
+        await db.query(
+          "INSERT INTO refresh_tokens (user_id, token_hash) VALUES ($1, $2)",
+          [user.id, refreshTokenHash],
+        );
+
+        return res.status(200).json({
+          message: "Sukces",
+          token: accessToken,
+          refreshToken: refreshToken,
         });
+      } else {
+        customLog(
+          siteIDName,
+          `Login failed for user: ${nick} - Password mismatch`,
+        );
+      }
+    } else {
+      customLog(
+        siteIDName,
+        `Login failed for user: ${nick} - User not found or inactive`,
+      );
+    }
+  } catch (err) {
+    customLog(siteIDName, `Login error: ${err.message}`);
+    return res.status(500).json({ message: "Błąd bazy danych" });
+  }
+
+  customLog(siteIDName, `Login failed for user: ${nick}`);
+  return res
+    .status(401)
+    .json({ message: "Nie znaleziono loginu albo hasło jest nie poprawne!" });
+});
+
+app.post("/refresh", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Brak Refresh Tokena" });
+  }
+
+  try {
+    const result = await db.query(
+      "SELECT rt.*, u.username FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.expires_at > NOW() AND rt.revoked_at IS NULL",
+    );
+
+    const activeTokens = result.rows;
+    let matchedToken = null;
+
+    for (const tokenData of activeTokens) {
+      if (bcrypt.compareSync(refreshToken, tokenData.token_hash)) {
+        matchedToken = tokenData;
+        break;
+      }
     }
 
-    recentAttempts.push(now);
-    loginAttempts.set(clientIp, recentAttempts);
-    
-    try {
-        const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [nick]);
-        const user = result.rows[0];
-
-        if (user) {
-            const passwordMatch = bcrypt.compareSync(password, user.password_hash);
-            if (passwordMatch) {
-                customLog(siteIDName, `Login successful for user: ${user.username} with id ${user.id}`);
-                const token = jwt.sign({sub: user.id, nick: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-                return res.status(200).json({message: "Sukces", token});
-            } else {
-                customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
-            }
-        } else {
-            customLog(siteIDName, `Login failed for user: ${nick} - User not found or inactive`);
-        }
-    } catch (err) {
-        customLog(siteIDName, `Login error: ${err.message}`);
-        return res.status(500).json({message: "Błąd bazy danych"});
+    if (!matchedToken) {
+      return res
+        .status(401)
+        .json({ message: "Niepoprawny lub wygasły Refresh Token" });
     }
 
-    customLog(siteIDName, `Login failed for user: ${nick}`);
-    return res.status(401).json({message: "Nie znaleziono loginu albo hasło jest nie poprawne!"});
+    const accessToken = jwt.sign(
+      { sub: matchedToken.user_id, nick: matchedToken.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" },
+    );
+
+    return res.status(200).json({ token: accessToken });
+  } catch (err) {
+    customLog(siteIDName, `Refresh error: ${err.message}`);
+    return res.status(500).json({ message: "Błąd serwera" });
+  }
 });
 
 // User Management Endpoints
-app.get('/users', authenticateToken, async (req, res) => {
-    try {
-        const result = await db.query('SELECT id, username, is_active, created_at FROM users ORDER BY username ASC');
-        res.json(result.rows);
-    } catch (err) {
-         customLog(siteIDName, `Error when getting users: ${err.message}`);
-        res.status(500).json({error: 'Wewnętrzny błąd serwera'});
-    }
+app.get("/users", authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id, username, is_active, created_at FROM users ORDER BY username ASC",
+    );
+    res.json(result.rows);
+  } catch (err) {
+    customLog(siteIDName, `Error when getting users: ${err.message}`);
+    res.status(500).json({ error: "Błąd serwera" });
+  }
 });
 
-app.post('/users', authenticateToken, async (req, res) => {
-    const {username, password} = req.body;
-    if (!username || !password) {
-        return res.status(400).json({message: "Brakujące Pola"});
-    }
+app.post("/users", authenticateToken, async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: "Brakujące Pola" });
+  }
 
-    try {
-        const passwordHash = bcrypt.hashSync(password, 10);
-        await db.query(
-            'INSERT INTO users (username, password_hash) VALUES ($1, $2)',
-            [username, passwordHash]
-        );
-        res.status(201).json({message: "Użytkownik utworzony"});
-    } catch (err) {
-        customLog(siteIDName, `Error when adding user: ${err.message}`);
-        res.status(500).json({error: 'Błąd serwera'});
-    }
+  try {
+    const passwordHash = bcrypt.hashSync(password, 10);
+    await db.query(
+      "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
+      [username, passwordHash],
+    );
+    res.status(201).json({ message: "Użytkownik utworzony" });
+  } catch (err) {
+    customLog(siteIDName, `Error when adding user: ${err.message}`);
+    res.status(500).json({ error: "Błąd serwera" });
+  }
 });
 
-app.delete('/users/:id', authenticateToken, async (req, res) => {
-    const {id} = req.params;
-    try {
-        await db.query('DELETE FROM users WHERE id = $1', [id]);
-        res.json({message: "Użytkownik usunięty"});
-    } catch (err) {
-        customLog(siteIDName, `Error when deleting user: ${err.message}`);
-        res.status(500).json({error:  'Błąd serwera'});
-    }
+app.delete("/users/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query("DELETE FROM users WHERE id = $1", [id]);
+    res.json({ message: "Użytkownik usunięty" });
+  } catch (err) {
+    customLog(siteIDName, `Error when deleting user: ${err.message}`);
+    res.status(500).json({ error: "Błąd serwera" });
+  }
 });
 
 app.post("/users/:id/password", authenticateToken, async (req, res) => {
@@ -218,7 +306,7 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
   try {
     const userResult = await db.query(
       "SELECT id, password_hash FROM users WHERE id = $1",
-      [id]
+      [id],
     );
 
     if (userResult.rows.length === 0) {
@@ -226,7 +314,10 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const isPasswordIdentical = bcrypt.compareSync(currentPassword, user.password_hash);
+    const isPasswordIdentical = bcrypt.compareSync(
+      currentPassword,
+      user.password_hash,
+    );
 
     if (!isPasswordIdentical) {
       return res.status(400).json({ message: "Niepoprawne aktualne hasło" });
@@ -234,10 +325,10 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
 
     const newHash = bcrypt.hashSync(newPassword, 10);
 
-    await db.query(
-      "UPDATE users SET password_hash = $1 WHERE id = $2",
-      [newHash, id]
-    );
+    await db.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+      newHash,
+      id,
+    ]);
 
     return res.status(200).json({ message: "Hasło zaktualizowane" });
   } catch (err) {
@@ -246,17 +337,17 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
 });
 
 // Assign id-name to server (for logs)
-const siteIDName = 'JAVR_Server_Manager';
+const siteIDName = "JAVR_Server_Manager";
 
 // Start server
 const server = app.listen(3001, () => {
-    customLog(siteIDName, `Server started on port ${server.address().port}`);
+  customLog(siteIDName, `Server started on port ${server.address().port}`);
 
-    // Start checking ports for every defined server
-    for (const server of servers) {
-        customLog(server.htmlID, "Starting statusMonitor");
-        server.statusMonitor()
-    }
+  // Start checking ports for every defined server
+  for (const server of servers) {
+    customLog(server.htmlID, "Starting statusMonitor");
+    server.statusMonitor();
+  }
 });
 
 // Start socket
@@ -265,138 +356,148 @@ const io = socketIO(server);
 setWebsocket(io);
 
 // When client connects to the server
-io.on(Events.CONNECTION, socket => {
-    sockets.push(socket);
+io.on(Events.CONNECTION, (socket) => {
+  sockets.push(socket);
 
-    let ip = socket.handshake.address.split(':');
-    ip = ip[ip.length - 1];
+  let ip = socket.handshake.address.split(":");
+  ip = ip[ip.length - 1];
 
-    customLog(siteIDName, `Established connection with website server`);
+  customLog(siteIDName, `Established connection with website server`);
 
-    // Respond to clients data request
-    socket.on(Events.STATUS_REQUEST, () => {
-        // Send back servers statuses
-        if (socket) {
-            customLog(siteIDName, `Status request received from ${ip}`);
-            SocketEvents.statusResponse();
-            customLog(siteIDName, `Status update sent ${ip}`);
-        }
-    });
+  // Respond to clients data request
+  socket.on(Events.STATUS_REQUEST, () => {
+    // Send back servers statuses
+    if (socket) {
+      customLog(siteIDName, `Status request received from ${ip}`);
+      SocketEvents.statusResponse();
+      customLog(siteIDName, `Status update sent ${ip}`);
+    }
+  });
 
-    // Requested server start
-    socket.on(Events.START_SERVER_REQUEST, (serverID, socketID) => {
-        customLog(serverID, `${ip} requested server start`);
+  // Requested server start
+  socket.on(Events.START_SERVER_REQUEST, (serverID, socketID) => {
+    customLog(serverID, `${ip} requested server start`);
 
-        // Get requested server's status
-        const server = getElementByHtmlID(servers, serverID);
+    // Get requested server's status
+    const server = getElementByHtmlID(servers, serverID);
 
-        if (server && server instanceof AStartableServer) {
-            if (server.status === statuses.OFFLINE) {
-                cancelSleepTimer();
-                server.startServer();
-            }
-            else {
-                customLog(serverID, `Request denied, port is taken`);
-                SocketEvents.requestFailed(socket, {socketID, text: 'Port jest zajęty'});
-            }
-        }
-        else {
-            customLog(serverID, `Request denied, Server not found`);
-            SocketEvents.requestFailed(socket, {socketID, text: "Nie znaleziono serwera"});
-        }
-    });
+    if (server && server instanceof AStartableServer) {
+      if (server.status === statuses.OFFLINE) {
+        cancelSleepTimer();
+        server.startServer();
+      } else {
+        customLog(serverID, `Request denied, port is taken`);
+        SocketEvents.requestFailed(socket, {
+          socketID,
+          text: "Port jest zajęty",
+        });
+      }
+    } else {
+      customLog(serverID, `Request denied, Server not found`);
+      SocketEvents.requestFailed(socket, {
+        socketID,
+        text: "Nie znaleziono serwera",
+      });
+    }
+  });
 
-    // Requested server stop
-    socket.on(Events.STOP_SERVER_REQUEST, (serverID, socketID) => {
-        customLog(serverID, `${ip} requested server stop`);
+  // Requested server stop
+  socket.on(Events.STOP_SERVER_REQUEST, (serverID, socketID) => {
+    customLog(serverID, `${ip} requested server stop`);
 
-        const server = getElementByHtmlID(servers, serverID);
+    const server = getElementByHtmlID(servers, serverID);
 
-        if (server && server instanceof AStartableServer) {
-            if (server.status !== statuses.OFFLINE) {
-                server.stopServer();
-            }
-            else {
-                customLog(serverID, `Request denied, server is not running`);
-                SocketEvents.requestFailed(socket, {socketID, text: 'Serwer nie jest włączony'});
-            }
-        }
-        else {
-            customLog(serverID, `Request denied, Server not found`);
-            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono serwera'});
-        }
+    if (server && server instanceof AStartableServer) {
+      if (server.status !== statuses.OFFLINE) {
+        server.stopServer();
+      } else {
+        customLog(serverID, `Request denied, server is not running`);
+        SocketEvents.requestFailed(socket, {
+          socketID,
+          text: "Serwer nie jest włączony",
+        });
+      }
+    } else {
+      customLog(serverID, `Request denied, Server not found`);
+      SocketEvents.requestFailed(socket, {
+        socketID,
+        text: "Nie znaleziono serwera",
+      });
+    }
+  });
 
-    });
+  // Request bot start
+  socket.on(Events.START_DBOT_REQUEST, (botID, socketID) => {
+    // Search for bot in the list
+    const bot = getElementByHtmlID(discordBots, botID);
 
+    // Check if bot was found
+    if (bot) {
+      // Check if bot isn't already on
+      if (bot.status === statuses.OFFLINE) {
+        cancelSleepTimer();
+        bot.start();
+      } else {
+        customLog(botID, `Request denied, bot already on`);
+        SocketEvents.requestFailed(socket, {
+          socketID,
+          text: "Bot jest już włączony",
+        });
+      }
+    } else {
+      customLog(botID, `Request denied, Bot not found`);
+      SocketEvents.requestFailed(socket, {
+        socketID,
+        text: "Nie znaleziono bota",
+      });
+    }
+  });
 
-    // Request bot start
-    socket.on(Events.START_DBOT_REQUEST, (botID, socketID) => {
+  // Requested server stop
+  socket.on(Events.STOP_DBOT_REQUEST, (botID, socketID) => {
+    customLog(siteIDName, `${ip} requested bot stop`);
 
-        // Search for bot in the list
-        const bot = getElementByHtmlID(discordBots, botID);
+    // Search for bot in the list
+    const bot = getElementByHtmlID(discordBots, botID);
 
-        // Check if bot was found
-        if (bot) {
-            // Check if bot isn't already on
-            if (bot.status === statuses.OFFLINE) {
-                cancelSleepTimer();
-                bot.start();
-            }
-            else {
-                customLog(botID, `Request denied, bot already on`);
-                SocketEvents.requestFailed(socket, {socketID, text: 'Bot jest już włączony'});
-            }
-        }
-        else {
-            customLog(botID, `Request denied, Bot not found`);
-            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono bota'});
-        }
-    });
+    // Check if bot was found
+    if (bot) {
+      // Conditions broken down for clarity
+      const botOnline = bot.status === statuses.ONLINE;
+      const lavaOnline = bot.lavaStatus === statuses.ONLINE;
+      const botStarting = bot.status === statuses.STARTING;
+      const botStopping = bot.status === statuses.STOPPING;
 
-    // Requested server stop
-    socket.on(Events.STOP_DBOT_REQUEST, (botID, socketID) => {
-        customLog(siteIDName, `${ip} requested bot stop`);
+      // Check if conditions to stop the bot are met
+      if ((botOnline || lavaOnline) && !(botStarting || botStopping)) {
+        bot.stop();
+      } else {
+        customLog(botID, `Request denied, bot is not online`);
+        SocketEvents.requestFailed(socket, {
+          socketID,
+          text: "Bot nie jest w pełni włączony",
+        });
+      }
+    } else {
+      customLog(botID, `Request denied, Bot not found`);
+      SocketEvents.requestFailed(socket, {
+        socketID,
+        text: "Nie znaleziono bota",
+      });
+    }
+  });
 
-        // Search for bot in the list
-        const bot = getElementByHtmlID(discordBots, botID);
+  // Request manager stop
+  socket.on(Events.STOP_SERVER_MANAGER_REQUEST, (socketID) => {
+    customLog(siteIDName, `${ip} requested manager stop`);
 
-        // Check if bot was found
-        if (bot) {
-            // Conditions broken down for clarity
-            const botOnline = bot.status === statuses.ONLINE;
-            const lavaOnline = bot.lavaStatus === statuses.ONLINE;
-            const botStarting = bot.status === statuses.STARTING;
-            const botStopping = bot.status === statuses.STOPPING;
+    sleepSystem(socket, socketID);
+  });
 
-            // Check if conditions to stop the bot are met
-            if ((botOnline || lavaOnline) && !(botStarting || botStopping)) {
-                bot.stop();
-            }
-            else {
-                customLog(botID, `Request denied, bot is not online`);
-                SocketEvents.requestFailed(socket, {socketID, text: 'Bot nie jest w pełni włączony'});
-            }
-        }
-        else {
-            customLog(botID, `Request denied, Bot not found`);
-            SocketEvents.requestFailed(socket, {socketID, text: 'Nie znaleziono bota'});
-        }
-
-    });
-
-
-    // Request manager stop
-    socket.on(Events.STOP_SERVER_MANAGER_REQUEST, (socketID) => {
-        customLog(siteIDName, `${ip} requested manager stop`);
-
-        sleepSystem(socket, socketID);
-    });
-
-    socket.on(Events.DISCONNECT, () => {
-        sockets = sockets.filter(s => s !== socket);
-    })
+  socket.on(Events.DISCONNECT, () => {
+    sockets = sockets.filter((s) => s !== socket);
+  });
 });
-
 
 //
 // Auto-sleep
@@ -404,26 +505,31 @@ io.on(Events.CONNECTION, socket => {
 
 // Check if any server is used every minute
 function sleepConditionDetector() {
-    setInterval(() => {
-        if (anyServerUsed(servers) && !sleepTimerID) {
-            sleepTimerID = sleepTimer();
-        }
-    }, 60 * 1000);
+  setInterval(() => {
+    if (anyServerUsed(servers) && !sleepTimerID) {
+      sleepTimerID = sleepTimer();
+    }
+  }, 60 * 1000);
 }
 
 // If they are not used for configured time enter sleep
 function sleepTimer() {
-    return setTimeout(() => {
-        // If servers are still offline
-        if (anyServerUsed(servers)) {
-            customLog(siteIDName, `No servers were used for ${timeToSleep} minutes, entering sleep`);
-            cancelSleepTimer();
-            sleepSystem();
-        }
-        else {
-            cancelSleepTimer()
-        }
-    }, timeToSleep * 60 * 1000);
+  return setTimeout(
+    () => {
+      // If servers are still offline
+      if (anyServerUsed(servers)) {
+        customLog(
+          siteIDName,
+          `No servers were used for ${timeToSleep} minutes, entering sleep`,
+        );
+        cancelSleepTimer();
+        sleepSystem();
+      } else {
+        cancelSleepTimer();
+      }
+    },
+    timeToSleep * 60 * 1000,
+  );
 }
 
 /**
@@ -432,28 +538,28 @@ function sleepTimer() {
  * @param clientSocketID - ID of the client's socket with the website.
  */
 function sleepSystem(socket, clientSocketID) {
-    const command = os.platform() === 'win32'
-        // Windows command
-        ? 'rundll32.exe powrprof.dll, SetSuspendState Sleep'
-        // Linux command
-        : 'pm-suspend';
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            customLog(siteIDName, `Error putting system to sleep: ${error.message}`);
-            if (socket)
-                SocketEvents.requestFailed(socket, {
-                    socketID: clientSocketID,
-                    text: "Manager nie chce spać (coś nie działa)"
-                });
-        }
-        if (stderr) {
-            customLog(siteIDName, `Error output: ${stderr}`);
-        }
-    });
+  const command =
+    os.platform() === "win32"
+      ? // Windows command
+        "rundll32.exe powrprof.dll, SetSuspendState Sleep"
+      : // Linux command
+        "pm-suspend";
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      customLog(siteIDName, `Error putting system to sleep: ${error.message}`);
+      if (socket)
+        SocketEvents.requestFailed(socket, {
+          socketID: clientSocketID,
+          text: "Manager nie chce spać (coś nie działa)",
+        });
+    }
+    if (stderr) {
+      customLog(siteIDName, `Error output: ${stderr}`);
+    }
+  });
 }
 
 function cancelSleepTimer() {
-    if (sleepTimerID)
-        clearTimeout(sleepTimerID);
-    sleepTimerID = undefined;
+  if (sleepTimerID) clearTimeout(sleepTimerID);
+  sleepTimerID = undefined;
 }
