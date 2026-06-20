@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const socketIO = require("socket.io");
 const { exec } = require("child_process");
-const { jwtVerify, SignJWT } = require("jose");
+const { jwtVerify, SignJWT, decodeJwt } = require("jose");
 const crypto = require("crypto");
 
 // Local imports
@@ -122,6 +122,18 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const { payload } = await jwtVerify(token, secret);
+
+    const tokenHash = hashToken(token);
+    const blacklistResult = await db.query(
+      `SELECT 1 FROM token_blacklist
+       WHERE token_hash = $1 AND expires_at > NOW()`,
+      [tokenHash],
+    );
+
+    if (blacklistResult.rows.length > 0) {
+      return res.status(401).json({ message: "Token unieważniony" });
+    }
+
     req.user = payload;
     next();
   } catch (err) {
@@ -140,7 +152,7 @@ app.post("/blacklist", async (req, res) => {
   }
 
   try {
-    const decoded = jwt.decode(token);
+    const decoded = decodeJwt(token);
 
     if (!decoded || !decoded.exp) {
       return res.status(400).json({ message: "Invalid token structure" });
@@ -223,7 +235,7 @@ app.post("/login", async (req, res) => {
           `Login successful for user: ${user.username} with id ${user.id}`,
         );
 
-        // Create tokens
+        // Create short-lived access token (15 minutes)
         const accessToken = await new SignJWT({
           sub: user.id,
           nick: user.username,
@@ -233,12 +245,13 @@ app.post("/login", async (req, res) => {
           .setExpirationTime("15m")
           .sign(secret);
 
+        // Create long-lived refresh token (7 days)
         const refreshToken = crypto.randomBytes(40).toString("hex");
-        const refreshTokenHash = bcrypt.hashSync(refreshToken, 10);
+        const refreshTokenHash = hashToken(refreshToken);
 
-        // Store refresh token in DB
         await db.query(
-          "INSERT INTO refresh_tokens (user_id, token_hash) VALUES ($1, $2)",
+          `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+           VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
           [user.id, refreshTokenHash],
         );
 
@@ -278,26 +291,33 @@ app.post("/refresh", async (req, res) => {
   }
 
   try {
+    const refreshTokenHash = hashToken(refreshToken);
+
     const result = await db.query(
-      "SELECT rt.*, u.username FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.expires_at > NOW() AND rt.revoked_at IS NULL",
+      `SELECT rt.*, u.username 
+       FROM refresh_tokens rt 
+       JOIN users u ON rt.user_id = u.id 
+       WHERE rt.token_hash = $1 
+         AND rt.expires_at > NOW() 
+         AND rt.revoked_at IS NULL`,
+      [refreshTokenHash],
     );
 
-    const activeTokens = result.rows;
-    let matchedToken = null;
-
-    for (const tokenData of activeTokens) {
-      if (bcrypt.compareSync(refreshToken, tokenData.token_hash)) {
-        matchedToken = tokenData;
-        break;
-      }
-    }
-
-    if (!matchedToken) {
+    if (result.rows.length === 0) {
       return res
         .status(401)
         .json({ message: "Niepoprawny lub wygasły Refresh Token" });
     }
 
+    const matchedToken = result.rows[0];
+
+    // Revoke the used refresh token (single-use)
+    await db.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1",
+      [matchedToken.id],
+    );
+
+    // Generate new access token (15 minutes)
     const accessToken = await new SignJWT({
       sub: matchedToken.user_id,
       nick: matchedToken.username,
@@ -307,7 +327,20 @@ app.post("/refresh", async (req, res) => {
       .setExpirationTime("15m")
       .sign(secret);
 
-    return res.status(200).json({ token: accessToken });
+    // Generate a new refresh token (rotation) with 7-day expiry
+    const newRefreshToken = crypto.randomBytes(40).toString("hex");
+    const newRefreshTokenHash = hashToken(newRefreshToken);
+
+    await db.query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+      [matchedToken.user_id, newRefreshTokenHash],
+    );
+
+    return res.status(200).json({
+      token: accessToken,
+      refreshToken: newRefreshToken,
+    });
   } catch (err) {
     customLog(siteIDName, `Refresh error: ${err.message}`);
     return res.status(500).json({ message: "Błąd serwera" });

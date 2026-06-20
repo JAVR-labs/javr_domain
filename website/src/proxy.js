@@ -62,11 +62,9 @@ async function tryRefresh(req, refreshToken) {
     const response = await axios.post(refreshUrl, { refreshToken });
 
     if (response.status === 200) {
-      const newToken = response.data.token;
+      const { token, refreshToken: newRefreshToken } = response.data;
 
-      const nextResponse = NextResponse.next();
-
-      const cookie = serialize("authtoken", newToken, {
+      const accessCookie = serialize("authtoken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -74,7 +72,17 @@ async function tryRefresh(req, refreshToken) {
         path: "/",
       });
 
-      nextResponse.headers.append("Set-Cookie", cookie);
+      const refreshCookie = serialize("refreshtoken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: "/",
+      });
+
+      const nextResponse = NextResponse.next();
+      nextResponse.headers.append("Set-Cookie", accessCookie);
+      nextResponse.headers.append("Set-Cookie", refreshCookie);
       return nextResponse;
     }
   } catch (error) {
