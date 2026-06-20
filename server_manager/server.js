@@ -123,6 +123,7 @@ const authenticateToken = async (req, res, next) => {
   try {
     const { payload } = await jwtVerify(token, secret);
 
+    // Check blacklist
     const tokenHash = hashToken(token);
     const blacklistResult = await db.query(
       `SELECT 1 FROM token_blacklist
@@ -146,14 +147,12 @@ const authenticateToken = async (req, res, next) => {
 
 app.post("/blacklist", async (req, res) => {
   const { token } = req.body;
-
   if (!token) {
     return res.status(400).json({ message: "Token required" });
   }
 
   try {
     const decoded = decodeJwt(token);
-
     if (!decoded || !decoded.exp) {
       return res.status(400).json({ message: "Invalid token structure" });
     }
@@ -163,8 +162,8 @@ app.post("/blacklist", async (req, res) => {
 
     await db.query(
       `INSERT INTO token_blacklist (token_hash, expires_at)
-             VALUES ($1, $2)
-             ON CONFLICT (token_hash) DO NOTHING`, // Prevents duplicates
+       VALUES ($1, $2)
+       ON CONFLICT (token_hash) DO NOTHING`,
       [tokenHash, expiresAt],
     );
 
@@ -177,7 +176,6 @@ app.post("/blacklist", async (req, res) => {
 
 app.post("/check-blacklist", async (req, res) => {
   const { token } = req.body;
-
   if (!token) {
     return res.status(400).json({ message: "Token required" });
   }
@@ -186,7 +184,7 @@ app.post("/check-blacklist", async (req, res) => {
     const tokenHash = hashToken(token);
     const result = await db.query(
       `SELECT 1 FROM token_blacklist
-             WHERE token_hash = $1 AND expires_at > NOW()`,
+       WHERE token_hash = $1 AND expires_at > NOW()`,
       [tokenHash],
     );
 
@@ -249,10 +247,13 @@ app.post("/login", async (req, res) => {
         const refreshToken = crypto.randomBytes(40).toString("hex");
         const refreshTokenHash = hashToken(refreshToken);
 
+        // Get fingerprint for theft detection
+        const userAgent = req.headers["user-agent"] || "unknown";
+
         await db.query(
-          `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-           VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
-          [user.id, refreshTokenHash],
+          `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
+           VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, $4)`,
+          [user.id, refreshTokenHash, clientIp, userAgent],
         );
 
         return res.status(200).json({
@@ -286,6 +287,12 @@ app.post("/login", async (req, res) => {
 app.post("/refresh", async (req, res) => {
   const { refreshToken } = req.body;
 
+  try {
+    await db.query("DELETE FROM token_blacklist WHERE expires_at < NOW()");
+  } catch (err) {
+    customLog(siteIDName, `Blacklist cleanup error: ${err.message}`);
+  }
+
   if (!refreshToken) {
     return res.status(400).json({ message: "Brak Refresh Tokena" });
   }
@@ -294,12 +301,12 @@ app.post("/refresh", async (req, res) => {
     const refreshTokenHash = hashToken(refreshToken);
 
     const result = await db.query(
-      `SELECT rt.*, u.username 
-       FROM refresh_tokens rt 
-       JOIN users u ON rt.user_id = u.id 
-       WHERE rt.token_hash = $1 
-         AND rt.expires_at > NOW() 
-         AND rt.revoked_at IS NULL`,
+      `SELECT t.*, u.username 
+       FROM refresh_tokens t
+       JOIN users u ON t.user_id = u.id 
+       WHERE t.token_hash = $1 
+         AND t.expires_at > NOW() 
+         AND t.revoked_at IS NULL`,
       [refreshTokenHash],
     );
 
@@ -311,13 +318,40 @@ app.post("/refresh", async (req, res) => {
 
     const matchedToken = result.rows[0];
 
-    // Revoke the used refresh token (single-use)
+    // THEFT DETECTION: compare IP and User-Agent
+    const currentIp = req.ip;
+    const currentUserAgent = req.headers["user-agent"] || "unknown";
+
+    const ipMatches = matchedToken.ip_address === currentIp;
+    const uaMatches = matchedToken.user_agent === currentUserAgent;
+
+    if (!ipMatches || !uaMatches) {
+      // Possible token theft – revoke token for this user
+      await db.query(
+        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1 AND expires_at > NOW() AND revoked_at IS NULL RETURNING user_id, id, ip_address, user_agent;",
+        [matchedToken.id],
+      );
+
+      customLog(
+        siteIDName,
+        `Refresh token theft detected for user ${matchedToken.user_id}. ` +
+          `Stored IP: ${matchedToken.ip_address}, Current IP: ${currentIp}. ` +
+          `Stored UA: ${matchedToken.user_agent}, Current UA: ${currentUserAgent}`,
+      );
+
+      return res.status(401).json({
+        message:
+          "Sesja unieważniona z powodu podejrzanej aktywności. Zaloguj się ponownie.",
+      });
+    }
+
+    // Legitimate refresh – revoke the used token
     await db.query(
       "UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1",
       [matchedToken.id],
     );
 
-    // Generate new access token (15 minutes)
+    // Generate new access token
     const accessToken = await new SignJWT({
       sub: matchedToken.user_id,
       nick: matchedToken.username,
@@ -327,14 +361,14 @@ app.post("/refresh", async (req, res) => {
       .setExpirationTime("15m")
       .sign(secret);
 
-    // Generate a new refresh token (rotation) with 7-day expiry
+    // Generate a new refresh token (rotation) with current fingerprint
     const newRefreshToken = crypto.randomBytes(40).toString("hex");
     const newRefreshTokenHash = hashToken(newRefreshToken);
 
     await db.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
-      [matchedToken.user_id, newRefreshTokenHash],
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, $4)`,
+      [matchedToken.user_id, newRefreshTokenHash, currentIp, currentUserAgent],
     );
 
     return res.status(200).json({
@@ -347,16 +381,38 @@ app.post("/refresh", async (req, res) => {
   }
 });
 
-// User Management Endpoints
-app.get("/users", authenticateToken, async (req, res) => {
+app.post("/revoke-refresh", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Brak Refresh Tokena" });
+  }
+
   try {
+    const refreshTokenHash = hashToken(refreshToken);
+
+    // Revoke the token if it exists and isn't already revoked
     const result = await db.query(
-      "SELECT id, username, is_active, created_at FROM users ORDER BY username ASC",
+      `UPDATE refresh_tokens 
+       SET revoked_at = NOW() 
+       WHERE token_hash = $1 AND revoked_at IS NULL`,
+      [refreshTokenHash],
     );
-    res.json(result.rows);
+
+    if (result.rowCount === 0) {
+      // Token not found or already revoked – still success for logout
+      customLog(
+        siteIDName,
+        `Refresh token revocation attempted but token not found or already revoked.`,
+      );
+    } else {
+      customLog(siteIDName, `Refresh token revoked successfully.`);
+    }
+
+    return res.status(200).json({ message: "Refresh token revoked" });
   } catch (err) {
-    customLog(siteIDName, `Error when getting users: ${err.message}`);
-    res.status(500).json({ error: "Błąd serwera" });
+    customLog(siteIDName, `Error revoking refresh token: ${err.message}`);
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -428,6 +484,11 @@ app.post("/users/:id/password", authenticateToken, async (req, res) => {
       newHash,
       id,
     ]);
+
+    await db.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [id],
+    );
 
     return res.status(200).json({ message: "Hasło zaktualizowane" });
   } catch (err) {

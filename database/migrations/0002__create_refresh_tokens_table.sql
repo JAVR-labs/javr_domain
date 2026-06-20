@@ -6,6 +6,8 @@ CREATE TABLE refresh_tokens
     issued_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days',
     revoked_at TIMESTAMPTZ          DEFAULT NULL
+    ip_address TEXT        NOT NULL
+    user_agent TEXT        NOT NULL
 );
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);
@@ -13,16 +15,16 @@ CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens (token_hash);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens (expires_at);
 
 -- Function to set the expiry date
-CREATE
-    OR REPLACE FUNCTION set_expiry_date()
-    RETURNS TRIGGER AS
-$$
+CREATE OR REPLACE FUNCTION set_expiry_date()
+RETURNS TRIGGER AS $$
 BEGIN
-    NEW.expires_at = NOW() + INTERVAL '7 days';
+    -- Only set on INSERT if not provided, or only on specific updates
+    IF TG_OP = 'INSERT' THEN
+        NEW.expires_at = COALESCE(NEW.expires_at, NOW() + INTERVAL '7 days');
+    END IF;
     RETURN NEW;
 END;
-$$
-    LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 
 -- Trigger to set the expiry date
