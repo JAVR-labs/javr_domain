@@ -108,6 +108,10 @@ setInterval(
 //Encode jwt Secret
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -127,6 +131,59 @@ const authenticateToken = async (req, res, next) => {
     return res.sendStatus(403);
   }
 };
+
+app.post("/blacklist", async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token required" });
+  }
+
+  try {
+    const decoded = jwt.decode(token);
+
+    if (!decoded || !decoded.exp) {
+      return res.status(400).json({ message: "Invalid token structure" });
+    }
+
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    await db.query(
+      `INSERT INTO token_blacklist (token_hash, expires_at)
+             VALUES ($1, $2)
+             ON CONFLICT (token_hash) DO NOTHING`, // Prevents duplicates
+      [tokenHash, expiresAt],
+    );
+
+    return res.status(200).json({ message: "Token blacklisted" });
+  } catch (err) {
+    customLog(siteIDName, `Error blacklisting token: ${err.message}`);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/check-blacklist", async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token required" });
+  }
+
+  try {
+    const tokenHash = hashToken(token);
+    const result = await db.query(
+      `SELECT 1 FROM token_blacklist
+             WHERE token_hash = $1 AND expires_at > NOW()`,
+      [tokenHash],
+    );
+
+    return res.status(200).json({ blacklisted: result.rows.length > 0 });
+  } catch (err) {
+    customLog(siteIDName, `Error checking blacklist: ${err.message}`);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 
 app.post("/login", async (req, res) => {
   const { nick, password } = req.body;
