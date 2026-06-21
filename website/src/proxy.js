@@ -32,7 +32,7 @@ export async function proxy(req) {
     return response;
   };
 
-  if (!token || isTokenBlacklisted(token)) {
+  if (!token || (await isTokenBlacklisted(token))) {
     // If no access token, try to refresh
     if (refreshToken) {
       return await tryRefresh(req, refreshToken);
