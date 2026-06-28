@@ -98,6 +98,20 @@ setInterval(
   60 * 60 * 1000
 );
 
+async function cleanupTokenBlacklist() {
+  try {
+    customLog(siteIDName, 'Starting token blacklist cleanup...');
+    await db.query('DELETE FROM token_blacklist WHERE expires_at < NOW()');
+    customLog(siteIDName, 'Token blacklist cleanup finished successfully.');
+  } catch (err) {
+    customLog(siteIDName, `CRITICAL Blacklist cleanup error: ${err.message}`);
+  }
+}
+
+setInterval(cleanupTokenBlacklist, 20 * 60 * 60 * 1000);
+
+cleanupTokenBlacklist(); // Initial cleanup on server start
+
 //Encode jwt Secret
 const secretValue = process.env.JWT_SECRET;
 
@@ -276,12 +290,6 @@ app.post('/login', async (req, res) => {
 
 app.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
-
-  try {
-    await db.query('DELETE FROM token_blacklist WHERE expires_at < NOW()');
-  } catch (err) {
-    customLog(siteIDName, `Blacklist cleanup error: ${err.message}`);
-  }
 
   if (!refreshToken) {
     return res.status(400).json({ message: 'Brak Refresh Tokena' });
