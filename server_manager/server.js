@@ -1,37 +1,31 @@
 // External imports
-require("dotenv").config();
-const express = require("express");
-const socketIO = require("socket.io");
-const { exec } = require("child_process");
-const { jwtVerify, SignJWT, decodeJwt } = require("jose");
-const crypto = require("crypto");
+require('dotenv').config();
+const express = require('express');
+const socketIO = require('socket.io');
+const { exec } = require('child_process');
+const { jwtVerify, SignJWT, decodeJwt } = require('jose');
+const crypto = require('crypto');
 
 // Local imports
-const { statuses, serverClasses } = require("./src/lib/CustomServers");
+const { statuses, serverClasses } = require('./src/lib/CustomServers');
 const {
   customLog,
   getElementByHtmlID,
   emitDataGlobal,
   anyServerUsed,
-} = require("./src/utils/custom-utils.js");
-const { DiscordBot } = require("./src/lib/DiscordBot.js");
-let {
-  servers,
-  Events,
-  sockets,
-  discordBots,
-  setWebsocket,
-} = require("./src/lib/globals.js");
-const AStartableServer = require("./src/lib/server_classes/AStartableServer.js");
+} = require('./src/utils/custom-utils.js');
+const { DiscordBot } = require('./src/lib/DiscordBot.js');
+let { servers, Events, sockets, discordBots, setWebsocket } = require('./src/lib/globals.js');
+const AStartableServer = require('./src/lib/server_classes/AStartableServer.js');
 
 //
 // INIT
 //
 
 // Create ConfigManager instance
-const { ConfigManager, configTypes } = require("./src/lib/ConfigManager.js");
-const os = require("node:os");
-const SocketEvents = require("./src/lib/SocketEvents.js");
+const { ConfigManager, configTypes } = require('./src/lib/ConfigManager.js');
+const os = require('node:os');
+const SocketEvents = require('./src/lib/SocketEvents.js');
 // Load configs
 ConfigManager.loadConfigs();
 // Get loaded configs
@@ -78,10 +72,11 @@ for (const type in serversInfo) {
 // Setup express
 const app = express();
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static('public'));
 
-const bcrypt = require("bcryptjs");
-const db = require("./src/lib/db.js");
+const bcrypt = require('bcryptjs');
+const db = require('./src/lib/db.js');
+const { error } = require('node:console');
 
 // Cache Limiting
 const loginAttempts = new Map();
@@ -92,9 +87,7 @@ setInterval(
   () => {
     const now = Date.now();
     for (const [ip, attempts] of loginAttempts.entries()) {
-      const recentAttempts = attempts.filter(
-        (t) => now - t < RATE_LIMIT_WINDOW,
-      );
+      const recentAttempts = attempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
       if (recentAttempts.length === 0) {
         loginAttempts.delete(ip);
       } else {
@@ -102,21 +95,21 @@ setInterval(
       }
     }
   },
-  60 * 60 * 1000,
+  60 * 60 * 1000
 );
 
 //Encode jwt Secret
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.sendStatus(401);
   }
 
@@ -128,33 +121,33 @@ const authenticateToken = async (req, res, next) => {
     const blacklistResult = await db.query(
       `SELECT 1 FROM token_blacklist
        WHERE token_hash = $1 AND expires_at > NOW()`,
-      [tokenHash],
+      [tokenHash]
     );
 
     if (blacklistResult.rows.length > 0) {
-      return res.status(401).json({ message: "Token unieważniony" });
+      return res.status(401).json({ message: 'Token unieważniony' });
     }
 
     req.user = payload;
     next();
   } catch (err) {
-    if (err.name === "JWTExpired") {
-      return res.status(401).json({ message: "Token Wygasł" });
+    if (err.name === 'JWTExpired') {
+      return res.status(401).json({ message: 'Token Wygasł' });
     }
     return res.sendStatus(403);
   }
 };
 
-app.post("/blacklist", async (req, res) => {
+app.post('/blacklist', async (req, res) => {
   const { token } = req.body;
   if (!token) {
-    return res.status(400).json({ message: "Token required" });
+    return res.status(400).json({ message: 'Token required' });
   }
 
   try {
     const decoded = decodeJwt(token);
     if (!decoded || !decoded.exp) {
-      return res.status(400).json({ message: "Invalid token structure" });
+      return res.status(400).json({ message: 'Invalid token structure' });
     }
 
     const tokenHash = hashToken(token);
@@ -164,20 +157,20 @@ app.post("/blacklist", async (req, res) => {
       `INSERT INTO token_blacklist (token_hash, expires_at)
        VALUES ($1, $2)
        ON CONFLICT (token_hash) DO NOTHING`,
-      [tokenHash, expiresAt],
+      [tokenHash, expiresAt]
     );
 
-    return res.status(200).json({ message: "Token blacklisted" });
+    return res.status(200).json({ message: 'Token blacklisted' });
   } catch (err) {
     customLog(siteIDName, `Error blacklisting token: ${err.message}`);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.post("/check-blacklist", async (req, res) => {
+app.post('/check-blacklist', async (req, res) => {
   const { token } = req.body;
   if (!token) {
-    return res.status(400).json({ message: "Token required" });
+    return res.status(400).json({ message: 'Token required' });
   }
 
   try {
@@ -185,25 +178,23 @@ app.post("/check-blacklist", async (req, res) => {
     const result = await db.query(
       `SELECT 1 FROM token_blacklist
        WHERE token_hash = $1 AND expires_at > NOW()`,
-      [tokenHash],
+      [tokenHash]
     );
 
     return res.status(200).json({ blacklisted: result.rows.length > 0 });
   } catch (err) {
     customLog(siteIDName, `Error checking blacklist: ${err.message}`);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post('/login', async (req, res) => {
   const { nick, password } = req.body;
 
   const clientIp = req.ip;
   const now = Date.now();
   const userAttempts = loginAttempts.get(clientIp) || [];
-  const recentAttempts = userAttempts.filter(
-    (t) => now - t < RATE_LIMIT_WINDOW,
-  );
+  const recentAttempts = userAttempts.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
   if (recentAttempts.length >= MAX_ATTEMPTS) {
     const oldestAttempt = recentAttempts[0];
@@ -219,82 +210,70 @@ app.post("/login", async (req, res) => {
   loginAttempts.set(clientIp, recentAttempts);
 
   try {
-    const result = await db.query(
-      "SELECT * FROM users WHERE username = $1 AND is_active = true",
-      [nick],
-    );
+    const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [
+      nick,
+    ]);
     const user = result.rows[0];
 
     if (user) {
       const passwordMatch = bcrypt.compareSync(password, user.password_hash);
       if (passwordMatch) {
-        customLog(
-          siteIDName,
-          `Login successful for user: ${user.username} with id ${user.id}`,
-        );
+        customLog(siteIDName, `Login successful for user: ${user.username} with id ${user.id}`);
 
         // Create short-lived access token (15 minutes)
         const accessToken = await new SignJWT({
           sub: user.id,
           nick: user.username,
         })
-          .setProtectedHeader({ alg: "HS256" })
+          .setProtectedHeader({ alg: 'HS256' })
           .setIssuedAt()
-          .setExpirationTime("15m")
+          .setExpirationTime('15m')
           .sign(secret);
 
         // Create long-lived refresh token (7 days)
-        const refreshToken = crypto.randomBytes(40).toString("hex");
+        const refreshToken = crypto.randomBytes(40).toString('hex');
         const refreshTokenHash = hashToken(refreshToken);
 
         // Get fingerprint for theft detection
-        const userAgent = req.headers["user-agent"] || "unknown";
+        const userAgent = req.headers['user-agent'] || 'unknown';
 
         await db.query(
           `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
            VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, $4)`,
-          [user.id, refreshTokenHash, clientIp, userAgent],
+          [user.id, refreshTokenHash, clientIp, userAgent]
         );
 
         return res.status(200).json({
-          message: "Sukces",
+          message: 'Sukces',
           token: accessToken,
           refreshToken: refreshToken,
         });
       } else {
-        customLog(
-          siteIDName,
-          `Login failed for user: ${nick} - Password mismatch`,
-        );
+        customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
       }
     } else {
-      customLog(
-        siteIDName,
-        `Login failed for user: ${nick} - User not found or inactive`,
-      );
+      customLog(siteIDName, `Login failed for user: ${nick} - User not found or inactive`);
     }
   } catch (err) {
     customLog(siteIDName, `Login error: ${err.message}`);
-    return res.status(500).json({ message: "Błąd bazy danych" });
+    return res.status(500).json({ message: 'Błąd bazy danych' });
   }
 
   customLog(siteIDName, `Login failed for user: ${nick}`);
-  return res
-    .status(401)
-    .json({ message: "Nie znaleziono loginu albo hasło jest nie poprawne!" });
+  return res.status(401).json({ message: 'Nie znaleziono loginu albo hasło jest nie poprawne!' });
 });
 
-app.post("/refresh", async (req, res) => {
+app.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
 
   try {
-    await db.query("DELETE FROM token_blacklist WHERE expires_at < NOW()");
+    await db.query('DELETE FROM token_blacklist WHERE expires_at < NOW()');
   } catch (err) {
     customLog(siteIDName, `Blacklist cleanup error: ${err.message}`);
   }
 
   if (!refreshToken) {
-    return res.status(400).json({ message: "Brak Refresh Tokena" });
+    return res.status(400).json({ message: 'Brak Refresh Tokena' });
   }
 
   try {
@@ -307,20 +286,18 @@ app.post("/refresh", async (req, res) => {
        WHERE t.token_hash = $1 
          AND t.expires_at > NOW() 
          AND t.revoked_at IS NULL`,
-      [refreshTokenHash],
+      [refreshTokenHash]
     );
 
     if (result.rows.length === 0) {
-      return res
-        .status(401)
-        .json({ message: "Niepoprawny lub wygasły Refresh Token" });
+      return res.status(401).json({ message: 'Niepoprawny lub wygasły Refresh Token' });
     }
 
     const matchedToken = result.rows[0];
 
     // THEFT DETECTION: compare IP and User-Agent
     const currentIp = req.ip;
-    const currentUserAgent = req.headers["user-agent"] || "unknown";
+    const currentUserAgent = req.headers['user-agent'] || 'unknown';
 
     const ipMatches = matchedToken.ip_address === currentIp;
     const uaMatches = matchedToken.user_agent === currentUserAgent;
@@ -328,47 +305,43 @@ app.post("/refresh", async (req, res) => {
     if (!ipMatches || !uaMatches) {
       // Possible token theft – revoke token for this user
       await db.query(
-        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1 AND expires_at > NOW() AND revoked_at IS NULL RETURNING user_id, id, ip_address, user_agent;",
-        [matchedToken.id],
+        'UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1 AND expires_at > NOW() AND revoked_at IS NULL RETURNING user_id, id, ip_address, user_agent;',
+        [matchedToken.id]
       );
 
       customLog(
         siteIDName,
         `Refresh token theft detected for user ${matchedToken.user_id}. ` +
           `Stored IP: ${matchedToken.ip_address}, Current IP: ${currentIp}. ` +
-          `Stored UA: ${matchedToken.user_agent}, Current UA: ${currentUserAgent}`,
+          `Stored UA: ${matchedToken.user_agent}, Current UA: ${currentUserAgent}`
       );
 
       return res.status(401).json({
-        message:
-          "Sesja unieważniona z powodu podejrzanej aktywności. Zaloguj się ponownie.",
+        message: 'Sesja unieważniona z powodu podejrzanej aktywności. Zaloguj się ponownie.',
       });
     }
 
     // Legitimate refresh – revoke the used token
-    await db.query(
-      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1",
-      [matchedToken.id],
-    );
+    await db.query('UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1', [matchedToken.id]);
 
     // Generate new access token
     const accessToken = await new SignJWT({
       sub: matchedToken.user_id,
       nick: matchedToken.username,
     })
-      .setProtectedHeader({ alg: "HS256" })
+      .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
-      .setExpirationTime("15m")
+      .setExpirationTime('15m')
       .sign(secret);
 
     // Generate a new refresh token (rotation) with current fingerprint
-    const newRefreshToken = crypto.randomBytes(40).toString("hex");
+    const newRefreshToken = crypto.randomBytes(40).toString('hex');
     const newRefreshTokenHash = hashToken(newRefreshToken);
 
     await db.query(
       `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
        VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, $4)`,
-      [matchedToken.user_id, newRefreshTokenHash, currentIp, currentUserAgent],
+      [matchedToken.user_id, newRefreshTokenHash, currentIp, currentUserAgent]
     );
 
     return res.status(200).json({
@@ -377,15 +350,15 @@ app.post("/refresh", async (req, res) => {
     });
   } catch (err) {
     customLog(siteIDName, `Refresh error: ${err.message}`);
-    return res.status(500).json({ message: "Błąd serwera" });
+    return res.status(500).json({ message: 'Błąd serwera' });
   }
 });
 
-app.post("/revoke-refresh", async (req, res) => {
+app.post('/revoke-refresh', async (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
-    return res.status(400).json({ message: "Brak Refresh Tokena" });
+    return res.status(400).json({ message: 'Brak Refresh Tokena' });
   }
 
   try {
@@ -396,108 +369,99 @@ app.post("/revoke-refresh", async (req, res) => {
       `UPDATE refresh_tokens 
        SET revoked_at = NOW() 
        WHERE token_hash = $1 AND revoked_at IS NULL`,
-      [refreshTokenHash],
+      [refreshTokenHash]
     );
 
     if (result.rowCount === 0) {
       // Token not found or already revoked – still success for logout
       customLog(
         siteIDName,
-        `Refresh token revocation attempted but token not found or already revoked.`,
+        `Refresh token revocation attempted but token not found or already revoked.`
       );
     } else {
       customLog(siteIDName, `Refresh token revoked successfully.`);
     }
 
-    return res.status(200).json({ message: "Refresh token revoked" });
+    return res.status(200).json({ message: 'Refresh token revoked' });
   } catch (err) {
     customLog(siteIDName, `Error revoking refresh token: ${err.message}`);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.post("/users", authenticateToken, async (req, res) => {
+app.post('/users', authenticateToken, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ message: "Brakujące Pola" });
+    return res.status(400).json({ message: 'Brakujące Pola' });
   }
 
   try {
     const passwordHash = bcrypt.hashSync(password, 10);
-    await db.query(
-      "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
-      [username, passwordHash],
-    );
-    res.status(201).json({ message: "Użytkownik utworzony" });
+    await db.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [
+      username,
+      passwordHash,
+    ]);
+    res.status(201).json({ message: 'Użytkownik utworzony' });
   } catch (err) {
     customLog(siteIDName, `Error when adding user: ${err.message}`);
-    res.status(500).json({ error: "Błąd serwera" });
+    res.status(500).json({ error: 'Błąd serwera' });
   }
 });
 
-app.delete("/users/:id", authenticateToken, async (req, res) => {
+app.delete('/users/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    await db.query("DELETE FROM users WHERE id = $1", [id]);
-    res.json({ message: "Użytkownik usunięty" });
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ message: 'Użytkownik usunięty' });
   } catch (err) {
     customLog(siteIDName, `Error when deleting user: ${err.message}`);
-    res.status(500).json({ error: "Błąd serwera" });
+    res.status(500).json({ error: 'Błąd serwera' });
   }
 });
 
-app.post("/users/:id/password", authenticateToken, async (req, res) => {
+app.post('/users/:id/password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const { id } = req.params;
 
   if (!currentPassword || !newPassword || !confirmPassword) {
-    return res.status(400).json({ message: "Brakujące Pola" });
+    return res.status(400).json({ message: 'Brakujące Pola' });
   }
 
   if (newPassword !== confirmPassword) {
-    return res.status(400).json({ message: "Hasła nie są takie same" });
+    return res.status(400).json({ message: 'Hasła nie są takie same' });
   }
 
   try {
-    const userResult = await db.query(
-      "SELECT id, password_hash FROM users WHERE id = $1",
-      [id],
-    );
+    const userResult = await db.query('SELECT id, password_hash FROM users WHERE id = $1', [id]);
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+      return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     }
 
     const user = userResult.rows[0];
-    const isPasswordIdentical = bcrypt.compareSync(
-      currentPassword,
-      user.password_hash,
-    );
+    const isPasswordIdentical = bcrypt.compareSync(currentPassword, user.password_hash);
 
     if (!isPasswordIdentical) {
-      return res.status(400).json({ message: "Niepoprawne aktualne hasło" });
+      return res.status(400).json({ message: 'Niepoprawne aktualne hasło' });
     }
 
     const newHash = bcrypt.hashSync(newPassword, 10);
 
-    await db.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
-      newHash,
-      id,
-    ]);
+    await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, id]);
 
     await db.query(
-      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
-      [id],
+      'UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL',
+      [id]
     );
 
-    return res.status(200).json({ message: "Hasło zaktualizowane" });
+    return res.status(200).json({ message: 'Hasło zaktualizowane' });
   } catch (err) {
-    return res.status(500).json({ message: "Błąd serwera" });
+    return res.status(500).json({ message: 'Błąd serwera' });
   }
 });
 
 // Assign id-name to server (for logs)
-const siteIDName = "JAVR_Server_Manager";
+const siteIDName = 'JAVR_Server_Manager';
 
 // Start server
 const server = app.listen(3001, () => {
@@ -505,7 +469,7 @@ const server = app.listen(3001, () => {
 
   // Start checking ports for every defined server
   for (const server of servers) {
-    customLog(server.htmlID, "Starting statusMonitor");
+    customLog(server.htmlID, 'Starting statusMonitor');
     server.statusMonitor();
   }
 });
@@ -519,7 +483,7 @@ setWebsocket(io);
 io.on(Events.CONNECTION, (socket) => {
   sockets.push(socket);
 
-  let ip = socket.handshake.address.split(":");
+  let ip = socket.handshake.address.split(':');
   ip = ip[ip.length - 1];
 
   customLog(siteIDName, `Established connection with website server`);
@@ -549,14 +513,14 @@ io.on(Events.CONNECTION, (socket) => {
         customLog(serverID, `Request denied, port is taken`);
         SocketEvents.requestFailed(socket, {
           socketID,
-          text: "Port jest zajęty",
+          text: 'Port jest zajęty',
         });
       }
     } else {
       customLog(serverID, `Request denied, Server not found`);
       SocketEvents.requestFailed(socket, {
         socketID,
-        text: "Nie znaleziono serwera",
+        text: 'Nie znaleziono serwera',
       });
     }
   });
@@ -574,14 +538,14 @@ io.on(Events.CONNECTION, (socket) => {
         customLog(serverID, `Request denied, server is not running`);
         SocketEvents.requestFailed(socket, {
           socketID,
-          text: "Serwer nie jest włączony",
+          text: 'Serwer nie jest włączony',
         });
       }
     } else {
       customLog(serverID, `Request denied, Server not found`);
       SocketEvents.requestFailed(socket, {
         socketID,
-        text: "Nie znaleziono serwera",
+        text: 'Nie znaleziono serwera',
       });
     }
   });
@@ -601,14 +565,14 @@ io.on(Events.CONNECTION, (socket) => {
         customLog(botID, `Request denied, bot already on`);
         SocketEvents.requestFailed(socket, {
           socketID,
-          text: "Bot jest już włączony",
+          text: 'Bot jest już włączony',
         });
       }
     } else {
       customLog(botID, `Request denied, Bot not found`);
       SocketEvents.requestFailed(socket, {
         socketID,
-        text: "Nie znaleziono bota",
+        text: 'Nie znaleziono bota',
       });
     }
   });
@@ -635,14 +599,14 @@ io.on(Events.CONNECTION, (socket) => {
         customLog(botID, `Request denied, bot is not online`);
         SocketEvents.requestFailed(socket, {
           socketID,
-          text: "Bot nie jest w pełni włączony",
+          text: 'Bot nie jest w pełni włączony',
         });
       }
     } else {
       customLog(botID, `Request denied, Bot not found`);
       SocketEvents.requestFailed(socket, {
         socketID,
-        text: "Nie znaleziono bota",
+        text: 'Nie znaleziono bota',
       });
     }
   });
@@ -678,17 +642,14 @@ function sleepTimer() {
     () => {
       // If servers are still offline
       if (anyServerUsed(servers)) {
-        customLog(
-          siteIDName,
-          `No servers were used for ${timeToSleep} minutes, entering sleep`,
-        );
+        customLog(siteIDName, `No servers were used for ${timeToSleep} minutes, entering sleep`);
         cancelSleepTimer();
         sleepSystem();
       } else {
         cancelSleepTimer();
       }
     },
-    timeToSleep * 60 * 1000,
+    timeToSleep * 60 * 1000
   );
 }
 
@@ -699,18 +660,18 @@ function sleepTimer() {
  */
 function sleepSystem(socket, clientSocketID) {
   const command =
-    os.platform() === "win32"
+    os.platform() === 'win32'
       ? // Windows command
-        "rundll32.exe powrprof.dll, SetSuspendState Sleep"
+        'rundll32.exe powrprof.dll, SetSuspendState Sleep'
       : // Linux command
-        "pm-suspend";
+        'pm-suspend';
   exec(command, (error, stdout, stderr) => {
     if (error) {
       customLog(siteIDName, `Error putting system to sleep: ${error.message}`);
       if (socket)
         SocketEvents.requestFailed(socket, {
           socketID: clientSocketID,
-          text: "Manager nie chce spać (coś nie działa)",
+          text: 'Manager nie chce spać (coś nie działa)',
         });
     }
     if (stderr) {

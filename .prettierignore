@@ -1,0 +1,9 @@
+node_modules/
+logs/
+database/
+.next/
+public/
+*.sql
+*.jpg
+*.png
+*.ico
