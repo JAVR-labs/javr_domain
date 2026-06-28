@@ -108,10 +108,6 @@ async function cleanupTokenBlacklist() {
   }
 }
 
-setInterval(cleanupTokenBlacklist, 20 * 60 * 60 * 1000);
-
-cleanupTokenBlacklist(); // Initial cleanup on server start
-
 //Encode jwt Secret
 const secretValue = process.env.JWT_SECRET;
 
@@ -504,6 +500,10 @@ const server = app.listen(3001, () => {
     server.statusMonitor();
   }
 });
+
+setInterval(cleanupTokenBlacklist, 20 * 60 * 60 * 1000);
+
+cleanupTokenBlacklist(); // Initial cleanup on server start
 
 // Start socket
 // noinspection JSValidateTypes
