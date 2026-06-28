@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    jwtVerify(authtoken, secret);
+    await jwtVerify(authtoken, secret);
   } catch {
     return res.status(401).json({ message: "Nieprawidłowy token" });
   }
