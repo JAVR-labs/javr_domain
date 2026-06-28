@@ -396,7 +396,19 @@ app.post('/revoke-refresh', async (req, res) => {
     return res.status(200).json({ message: 'Refresh token revoked' });
   } catch (err) {
     customLog(siteIDName, `Error revoking refresh token: ${err.message}`);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Wewnętrzny błąd serwera' });
+  }
+});
+
+app.get('/users', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id, username, created_at FROM users ORDER BY username ASC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    customLog(siteIDName, `Error retrieving user list: ${err.message}`);
+    res.status(500).json({ error: 'Wewnętrzny błąd serwera.' });
   }
 });
 
