@@ -5,7 +5,12 @@ CREATE TABLE users
     password_hash TEXT        NOT NULL,
     is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+   
+    CONSTRAINT check_username_length CHECK (LENGTH(TRIM(username)) >= 1),
+
+    -- NOTE: The regex pattern for bcrypt hashes is simplified here i don't know how to enforce it better.
+    CONSTRAINT check_bcrypt_format CHECK (password_hash ~ '^\$(2[a-z])${[:alnum:]}{86,}$')
 );
 
 -- Auto-update updated_at on row changes
