@@ -212,8 +212,7 @@ app.post('/login', async (req, res) => {
     });
   }
 
-  recentAttempts.push(now);
-  loginAttempts.set(clientIp, recentAttempts);
+  let loginFailed = false;
 
   try {
     const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [
@@ -256,13 +255,19 @@ app.post('/login', async (req, res) => {
         });
       } else {
         customLog(siteIDName, `Login failed for user: ${nick} - Password mismatch`);
+        loginFailed = true;
       }
     } else {
       customLog(siteIDName, `Login failed for user: ${nick} - User not found or inactive`);
+      loginFailed = true;
     }
   } catch (err) {
     customLog(siteIDName, `Login error: ${err.message}`);
     return res.status(500).json({ message: 'Błąd bazy danych' });
+  }
+  if (loginFailed) {
+    recentAttempts.push(now);
+    loginAttempts.set(clientIp, recentAttempts);
   }
 
   customLog(siteIDName, `Login failed for user: ${nick}`);
