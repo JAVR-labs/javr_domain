@@ -5,8 +5,8 @@ CREATE TABLE refresh_tokens
     token_hash TEXT        NOT NULL UNIQUE,
     issued_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days',
-    revoked_at TIMESTAMPTZ          DEFAULT NULL
-    ip_address TEXT        NOT NULL
+    revoked_at TIMESTAMPTZ          DEFAULT NULL,
+    ip_address TEXT        NOT NULL,
     user_agent TEXT        NOT NULL
 );
 
