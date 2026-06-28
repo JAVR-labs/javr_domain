@@ -8,10 +8,6 @@ CREATE TABLE IF NOT EXISTS token_blacklist (
 CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at 
     ON token_blacklist (expires_at);
 
-ALTER TABLE refresh_tokens 
-    ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE 
-    DEFAULT NOW() + INTERVAL '7 days';
-
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash 
     ON refresh_tokens (token_hash);
 
