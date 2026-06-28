@@ -99,6 +99,12 @@ setInterval(
 );
 
 //Encode jwt Secret
+const secretValue = process.env.JWT_SECRET;
+
+if (!secretValue || typeof secretValue !== 'string' || secretValue.trim() === '') {
+  throw new Error('JWT_SECRET environment variable is missing or empty. Please configure it.');
+}
+
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 function hashToken(token) {
