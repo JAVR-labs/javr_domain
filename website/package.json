@@ -1,19 +1,19 @@
 {
-  "name": "website",
-  "version": "0.1.0",
+  "name": "@javr-domain/website",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node server.cjs",
+    "dev": "NODE_ENV=development node --env-file=.env server.cjs",
     "build": "next build",
-    "start": "NODE_ENV=production node server.cjs",
+    "start": "NODE_ENV=production node --env-file=.env server.cjs",
     "lint": "next lint"
   },
   "dependencies": {
-    "axios": "^1.16.0",
+    "axios": "^1.15.2",
+    "@javr-domain/shared": "workspace:*",
     "framer-motion": "^11.5.4",
-    "jose": "^6.2.3",
     "module-alias": "^2.2.3",
-    "next": "^16.2.6",
+    "next": "^16.2.3",
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "^5.5.0",
@@ -22,8 +22,7 @@
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "usb": "^2.14.0",
-    "wake_on_lan": "^1.0.0",
-    "zod": "^4.4.2"
+    "wake_on_lan": "^1.0.0"
   },
   "overrides": {
     "postcss": "^8.5.10"
@@ -36,6 +35,7 @@
   "_moduleAliases": {
     "@": "./",
     "@server-utils": "./server/utils",
-    "@server-lib": "./server/lib"
+    "@server-lib": "./server/lib",
+    "@shared": "../shared"
   }
 }

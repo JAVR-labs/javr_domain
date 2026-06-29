@@ -11,7 +11,9 @@ const tableClasses = `${styles.servicesTable} table table-responsive`;
 const tbodyClasses = "align-middle text-center";
 
 function hasPlayerList(serviceData) {
-    return serviceData.type === ServiceTypes.SERVER && serviceData.service.currPlayers
+    const isServer = serviceData.type === ServiceTypes.SERVER;
+    const hasPlayerList = serviceData.service.maxPlayers !== undefined;
+    return isServer && hasPlayerList;
 }
 
 function TableElement(serviceData) {
@@ -80,7 +82,7 @@ function TableElement(serviceData) {
                 )
             }
         </>
-    )
+    );
 }
 
 function ManagerList() {
@@ -135,7 +137,7 @@ function ServerList() {
                     </tbody>
                 </table>
             </>
-        )
+        );
     }
 }
 
@@ -164,7 +166,7 @@ function DiscordBotList() {
                     </tbody>
                 </table>
             </>
-        )
+        );
     }
 }
 

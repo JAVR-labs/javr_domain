@@ -290,12 +290,6 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/webstorm,node,nextjs,react,windows,linux
 
-/package-lock.json
-/ts3server.sqlitedb
-/ts3server.sqlitedb-shm
-/ts3server.sqlitedb-wal
-/.ts3server_license_accepted
-
 # Server manager
 /server_manager/configs/*
 /server_manager/logs/*

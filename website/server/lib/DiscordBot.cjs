@@ -1,5 +1,5 @@
 const {spawn} = require('child_process');
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const {Statuses} = require("@server-lib/globals.js");
 const SocketEvents = require("@server-lib/SocketEvents.cjs");
 

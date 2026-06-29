@@ -1,6 +1,6 @@
 const AStartableServer = require("./AStartableServer.js");
 const {serverTypes} = require("../globals.js");
-const {customLog} = require("../../utils/custom-utils.js");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 const path = require("node:path");
 const fs = require("node:fs");
 const {platform} = require("node:os");
@@ -36,7 +36,7 @@ class TerrariaServer extends AStartableServer {
         if (workingDir) {
             let serverName = "TerrariaServer";
             if (platform() === "win32") {
-                serverName += "exe"
+                serverName += "exe";
             }
             filePath = path.join(workingDir, serverName);
         }
@@ -47,7 +47,8 @@ class TerrariaServer extends AStartableServer {
 
         this.configPath = configPath;
         // Prioritize reading max players from config
-        let configMaxPlayers = this.getPlayerLimit(this.configPath);
+        let configMaxPlayers;
+        if (configPath) this.getPlayerLimit(this.configPath);
         this.maxPlayers = configMaxPlayers ? configMaxPlayers : maxPlayers;
 
         this.currPlayers = [];
