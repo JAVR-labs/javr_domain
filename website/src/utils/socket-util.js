@@ -1,9 +1,23 @@
-import { io } from "socket.io-client";
+import {io} from "socket.io-client";
 import {Events} from "@server-lib/globals.js";
 
-export const socket = io();
+export const socket = io({
+    autoConnect: false
+});
+
+export function connectSocket() {
+    if (!socket.connected) {
+        socket.connect();
+    }
+}
+
+socket.on('connect_error', (err) => {
+    console.warn('Socket connection error:', err.message);
+});
 
 export const initServicesSocket = (setData) => {
+    connectSocket();
+
     socket.on(Events.STATUS_RESPONSE, (data) => {
         setData(data);
     });
@@ -23,6 +37,7 @@ export const initServicesSocket = (setData) => {
 
 
 export const innitZTSocket = (setData, setError) => {
+    connectSocket();
 
     socket.on(Events.ZT_RESPONSE, (data)=> {
         setData(data)

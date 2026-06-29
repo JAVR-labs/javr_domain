@@ -76,8 +76,6 @@ app.use(express.static('public'));
 
 const bcrypt = require('bcryptjs');
 const db = require('./src/lib/db.js');
-const { error } = require('node:console');
-
 // Cache Limiting
 const loginAttempts = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -201,6 +199,44 @@ app.post('/check-blacklist', async (req, res) => {
   } catch (err) {
     customLog(siteIDName, `Error checking blacklist: ${err.message}`);
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/verify-token', async (req, res) => {
+  const {token} = req.body;
+
+  if (!token) {
+    return res.status(400).json({message: 'Token jest wymagany'});
+  }
+
+  try {
+    const {payload} = await jwtVerify(token, secret);
+
+    const tokenHash = hashToken(token);
+    const blacklistResult = await db.query(
+        `SELECT 1
+         FROM token_blacklist
+         WHERE token_hash = $1
+           AND expires_at > NOW()`,
+        [tokenHash]
+    );
+
+    if (blacklistResult.rows.length > 0) {
+      customLog(siteIDName, 'Socket verify failed: token is blacklisted');
+      return res.status(401).json({message: 'Token unieważniony'});
+    }
+
+    return res.status(200).json({
+      valid: true,
+      user: {sub: payload.sub, nick: payload.nick}
+    });
+  }
+  catch (err) {
+    const isExpired = err.code === 'ERR_JWT_EXPIRED';
+    const messagePL = isExpired ? 'Token wygasł' : 'Token nieprawidłowy';
+    const messageEN = isExpired ? 'Token expired' : 'Token invalid';
+    customLog(siteIDName, `Socket verify failed: ${messageEN}`);
+    return res.status(401).json({messagePL});
   }
 });
 
