@@ -1,0 +1,51 @@
+@use 'sass:color';
+@use "variables.module" as *;
+
+.bgImgLogin {
+  background: $color-main url($backgrounds-path + "bg-main.jpg") no-repeat center fixed;
+  background-size: cover;
+}
+
+.loginContainer {
+  background-color: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(15px);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 450px;
+  margin: auto;
+}
+
+.loginTitle {
+  font-family: 'Jersey 25', sans-serif;
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.errorText {
+  color: #ff6b6b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.submitButton {
+  background-color: $color-aux;
+  border: none;
+  font-family: 'Jersey 25', sans-serif;
+  font-size: 1.5rem;
+  transition: transform 0.2s;
+  color: white;
+
+  &:hover {
+    background-color: color.adjust($color-aux, $lightness: 10%);
+    transform: scale(1.02);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

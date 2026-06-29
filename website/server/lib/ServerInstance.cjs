@@ -82,31 +82,31 @@ class ServerInstance {
         const handle = this.#app.getRequestHandler();
 
         // Ready the app
-        await this.#app.prepare().then(() => {
-            // Start the http server
-            this.websiteServer = createServer((req, res) => {
-                // noinspection JSIgnoredPromiseFromCall
-                handle(req, res);
-            });
+        await this.#app.prepare();
 
-            // Listen on the port
-            this.websiteServer.listen(this.port, (err) => {
-                if (err) throw err;
-                customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
-            });
-
-            // Initializer functions
-            this.createSocket();
-            this.startDiscordBots();
-            // this.initialiseAPI();
+        // Start the http server
+        this.websiteServer = createServer((req, res) => {
+            // noinspection JSIgnoredPromiseFromCall
+            handle(req, res);
         });
+
+        // Listen on the port
+        this.websiteServer.listen(this.port, (err) => {
+            if (err) throw err;
+            customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
+        });
+
+        // Initializer functions
+        await this.createSocket();
+        this.startDiscordBots();
+        // this.initialiseAPI();
     }
 
 
     /**
      * @desc Starts websocket connections.
      */
-    createSocket() {
+    async createSocket() {
         customLog(this.name, 'Creating websocket');
         // noinspection JSValidateTypes
         const websiteIO = socketIO(this.websiteServer, {
@@ -117,6 +117,46 @@ class ServerInstance {
         });
 
         setWebsiteIO(websiteIO);
+
+        websiteIO.use(async (socket, next) => {
+            const cookieHeader = socket.handshake.headers.cookie;
+            if (!cookieHeader) {
+                customLog(this.name, 'Socket auth failed: no cookie');
+                return next(new Error('Brak autoryzacji'));
+            }
+
+            const cookies = Object.fromEntries(
+                cookieHeader.split(';').map(c => {
+                    const [key, ...val] = c.trim().split('=');
+                    return [key.trim(), val.join('=')];
+                })
+            );
+
+            const token = cookies['authtoken'];
+            if (!token) {
+                customLog(this.name, 'Socket auth failed: no authtoken cookie');
+                return next(new Error('Brak tokena autoryzacyjnego'));
+            }
+
+            try {
+                const config = ConfigManager.getConfig(ConfigTypes.websiteConfig);
+                const managers = config?.managers || [];
+                const manager = managers[0] || {ip: 'localhost', port: 3001};
+
+                const response = await axios.post(
+                    `http://${manager.ip}:${manager.port}/verify-token`,
+                    {token}
+                );
+
+                socket.data.user = response.data.user;
+                next();
+            }
+            catch (err) {
+                const message = err.response?.data?.message || err.message;
+                customLog(this.name, `Socket auth failed: ${message}`);
+                next(new Error(message));
+            }
+        });
 
         // When client connects to the server
         websiteIO.on(Events.CONNECTION, clientSocket => {
