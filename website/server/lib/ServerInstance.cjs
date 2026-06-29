@@ -19,7 +19,7 @@ const SocketEvents = require("@server-lib/SocketEvents.cjs");
 const {getBoardByPID} = require("@server-utils/arduino-utils.cjs");
 const ServerList = require("@server-lib/ServerList.cjs");
 const ServerManager = require("@server-lib/ServerManager.cjs");
-const {ConfigTypes} = require("@server-lib/ConfigSettings");
+const { ConfigTypes, FileTemplates } = require('@server-lib/ConfigSettings');
 
 /**
  * @class ServerInstance
@@ -142,7 +142,7 @@ class ServerInstance {
             }
 
             try {
-                const config = ConfigManager.getConfig(ConfigTypes.websiteConfig);
+                const config = this.#configManager.getConfig(ConfigTypes.websiteConfig);
                 const managers = config?.managers || [];
                 const manager = managers[0] || {ip: 'localhost', port: 3001};
 
