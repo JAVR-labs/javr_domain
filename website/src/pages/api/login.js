@@ -1,4 +1,4 @@
-import { serialize } from 'cookie';
+import { stringifySetCookie } from 'cookie';
 import axios from 'axios';
 import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
 import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
@@ -23,19 +23,23 @@ export default async function handler(req, res) {
     if (response.status === 200) {
       const { token, refreshToken } = response.data;
 
-      const accessTokenCookie = serialize('authtoken', token, {
+      const accessTokenCookie = stringifySetCookie({
+        name: 'authtoken',
+        value: token,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 15 * 60, // 15 minutes
+        maxAge: 15 * 60,
         path: '/',
       });
 
-      const refreshTokenCookie = serialize('refreshtoken', refreshToken, {
+      const refreshTokenCookie = stringifySetCookie({
+        name: 'refreshtoken',
+        value: refreshToken,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
 

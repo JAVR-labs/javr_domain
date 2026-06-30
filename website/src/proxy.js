@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { isTokenBlacklisted } from '@utils/blacklist';
 import axios from 'axios';
-import { serialize } from 'cookie';
+import { stringifySetCookie } from 'cookie';
 import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
 import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
 
@@ -66,19 +66,23 @@ async function tryRefresh(req, refreshToken) {
     if (response.status === 200) {
       const { token, refreshToken: newRefreshToken } = response.data;
 
-      const accessCookie = serialize('authtoken', token, {
+      const accessCookie = stringifySetCookie({
+        name: 'authtoken',
+        value: token,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 15 * 60, // 15 minutes
+        maxAge: 15 * 60,
         path: '/',
       });
 
-      const refreshCookie = serialize('refreshtoken', newRefreshToken, {
+      const refreshCookie = stringifySetCookie({
+        name: 'refreshtoken',
+        value: newRefreshToken,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
 

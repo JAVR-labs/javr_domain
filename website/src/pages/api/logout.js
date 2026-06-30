@@ -1,4 +1,4 @@
-import { serialize } from 'cookie';
+import { stringifySetCookie } from 'cookie';
 import { blacklistToken } from '@/src/utils/blacklist';
 import axios from 'axios';
 import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
@@ -25,7 +25,9 @@ export default async function handler(req, res) {
   }
 
   // Clear cookies
-  const accessTokenCookie = serialize('authtoken', '', {
+  const accessTokenCookie = stringifySetCookie({
+    name: 'authtoken',
+    value: '',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
@@ -33,7 +35,9 @@ export default async function handler(req, res) {
     path: '/',
   });
 
-  const refreshTokenCookie = serialize('refreshtoken', '', {
+  const refreshTokenCookie = stringifySetCookie({
+    name: 'refreshtoken',
+    value: '',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
