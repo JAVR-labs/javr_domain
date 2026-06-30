@@ -2,9 +2,6 @@ include:
   - ../database/docker-compose.yml
 
 services:
-  javr-domain-db:
-    ports: [ "5432:5432" ]
-
   website:
     image: javr-domain:alpine-latest
     build:
