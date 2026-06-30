@@ -13,23 +13,23 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Build
 RUN pnpm --filter=@javr-domain/website run build
 
-
-# Deploy
-RUN pnpm deploy --filter=@javr-domain/website --prod --legacy /prod/website
+# Prune dev dependencies for production
+RUN pnpm install --prod --frozen-lockfile
 
 # Stage 2: Production image
 FROM base AS runner
 
 WORKDIR /app
 
-# Copy built node_modules and app files
-COPY --from=builder /prod/website .
-COPY --from=builder /prod/website/.next .next
+# Copy the entire production workspace (pnpm preserves symlinks)
+COPY --from=builder /app .
+
+WORKDIR /app/website
 
 # Expose the server port
 EXPOSE 3002
