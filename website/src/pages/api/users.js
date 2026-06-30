@@ -1,7 +1,5 @@
 import { jwtVerify } from 'jose';
 import axios from 'axios';
-import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
-import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
 import { customLog } from '@javr-domain/shared/Logger.js';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -19,9 +17,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Nieprawidłowy token' });
   }
 
-  const configManager = new ConfigManager(ConfigTypes, FileTemplates);
-  const config = configManager.getConfig(ConfigTypes.websiteConfig);
-  const managers = config?.managers || [];
+  const managers = req.websiteConfig?.managers || [];
   const manager = managers[0] || { ip: 'localhost', port: 3001 };
   const baseUrl = `http://${manager.ip}:${manager.port}/users`;
 

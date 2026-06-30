@@ -90,6 +90,7 @@ class ServerInstance {
 
         // Start the http server
         this.websiteServer = createServer((req, res) => {
+            req.websiteConfig = this.#configManager.getConfig(ConfigTypes.websiteConfig);
             // noinspection JSIgnoredPromiseFromCall
             handle(req, res);
         });

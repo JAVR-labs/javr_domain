@@ -1,8 +1,6 @@
 import { stringifySetCookie } from 'cookie';
 import { blacklistToken } from '@/src/utils/blacklist';
 import axios from 'axios';
-import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
-import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
 
 export default async function handler(req, res) {
   const token = req.cookies.authtoken;
@@ -12,9 +10,7 @@ export default async function handler(req, res) {
 
   if (refreshToken) {
     try {
-      const configManager = new ConfigManager(ConfigTypes, FileTemplates);
-      const config = configManager.getConfig(ConfigTypes.websiteConfig);
-      const managers = config?.managers || [];
+      const managers = req.websiteConfig?.managers || [];
       const manager = managers[0] || { ip: 'localhost', port: 3001 };
       await axios.post(`http://${manager.ip}:${manager.port}/revoke-refresh`, {
         refreshToken,
@@ -24,7 +20,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // Clear cookies
   const accessTokenCookie = stringifySetCookie({
     name: 'authtoken',
     value: '',

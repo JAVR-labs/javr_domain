@@ -1,7 +1,6 @@
 import { stringifySetCookie } from 'cookie';
 import axios from 'axios';
-import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
-import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
+import { customLog } from '@javr-domain/shared/Logger.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,9 +9,7 @@ export default async function handler(req, res) {
 
   const { nick, password } = req.body;
 
-  const configManager = new ConfigManager(ConfigTypes, FileTemplates);
-  const config = configManager.getConfig(ConfigTypes.websiteConfig);
-  const managers = config?.managers || [];
+  const managers = req.websiteConfig?.managers || [];
   const manager = managers[0] || { ip: 'localhost', port: 3001 };
 
   const authUrl = `http://${manager.ip}:${manager.port}/login`;
@@ -53,7 +50,7 @@ export default async function handler(req, res) {
       return res.status(error.response.status).json({ message: error.response.data.message });
     }
 
-    console.error('Auth error:', error.message);
+    customLog('Login', `Auth error: ${error.message}`);
     return res.status(500).json({
       message: 'Błąd połączenia z serwerem',
     });
