@@ -25,7 +25,7 @@ let _isEnabled = false;
  * @param {string} environment - The current environment (production/development).
  */
 function init(servers, sleepAfterMinutes = 10, environment) {
-    if (sleepAfterMinutes === -1) {
+    if (sleepAfterMinutes === -1 || isNaN(sleepAfterMinutes)) {
       customLog(LOG_ID, 'Sleep Manager disabled with env variable');
       _isEnabled = false;
       return;
