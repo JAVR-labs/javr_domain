@@ -12,7 +12,7 @@ function NavList() {
         e.preventDefault();
         const response = await fetch('/api/logout', { method: 'POST' });
         if (response.ok) {
-            router.push('/login');
+            await router.push('/login');
         }
     };
 
