@@ -14,7 +14,7 @@ const AStartableServer = require('./src/lib/server_classes/AStartableServer.js')
 const SocketEvents = require('./src/lib/SocketEvents.js');
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-
+require("dotenv").config();
 // Assign id-name to server (for logs)
 const serverIDName = 'JAVR_Server_Manager';
 // Create ConfigManager instance
