@@ -12,6 +12,7 @@ let _sleepAfterMinutes;
 let _servers = [];
 let _sleepTimerID = null;
 let _environment;
+let _isEnabled = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -24,17 +25,25 @@ let _environment;
  * @param {string} environment - The current environment (production/development).
  */
 function init(servers, sleepAfterMinutes = 10, environment) {
+    if (sleepAfterMinutes === -1) {
+      customLog(LOG_ID, 'Sleep Manager disabled with env variable');
+      _isEnabled = false;
+      return;
+    }
     _servers = servers;
     _startConditionDetector();
     _sleepAfterMinutes = sleepAfterMinutes;
     _environment = environment;
-    customLog(LOG_ID, `Sleep Manager initialized. System will sleep after ${_sleepAfterMinutes} min of inactivity.`);
+    customLog(LOG_ID, `Sleep Manager initialized. System will sleep after ${_sleepAfterMinutes} min of inactivity`);
+    _isEnabled = true;
 }
 
 /**
  * Cancels any running sleep timer and starts a fresh one.
  */
 function refreshSleepTimer() {
+    if (!_isEnabled) return;
+
     _cancelSleepTimer();
 
     _sleepTimerID = setTimeout(() => {
@@ -50,8 +59,9 @@ function refreshSleepTimer() {
  * @param {string} [clientSocketID]
  */
 function sleepSystem(socket, clientSocketID) {
+    if (!_isEnabled) return;
     if (_environment === 'development') {
-        customLog(LOG_ID, 'Sleep skipped in development environment.');
+        customLog(LOG_ID, 'Sleep skipped in development environment');
         return;
     }
     exec('systemctl suspend', (error, _stdout, stderr) => {
