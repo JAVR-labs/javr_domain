@@ -12,21 +12,20 @@ const ConfigTypes = {
  * Templates used for config generation
  */
 const FileTemplates = {
-    "discord-bots.json": [],
-    "website-config.json": {
-        name: "JAVR_Domain",
-        managers: [],
-        autostart: {
-            discordBots: [],
-            servers: []
-        },
-        rules: {}
+  'discord-bots.json': [],
+  'website-config.json': {
+    name: 'JAVR_Domain',
+    port: 3002,
+    'api-port': 3001,
+    managers: [],
+    autostart: {
+      discordBots: [],
+      servers: [],
     },
-    "arduinos.json": {},
-    "zeroTierConfig.json": {
-        "network": null,
-        "token": null,
-    },
+    processEnv: 'development',
+    rules: {},
+  },
+  'arduinos.json': {},
 };
 
-export {ConfigTypes, FileTemplates};
+export { ConfigTypes, FileTemplates };
