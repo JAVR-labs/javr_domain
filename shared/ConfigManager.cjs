@@ -1,53 +1,31 @@
 const {readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync} = require("node:fs");
-const {customLog} = require("@server-utils/custom-utils.cjs");
+const {customLog} = require("@javr-domain/shared/Logger.js");
 
 const logName = "Config-Manager";
 
 
-/**
- * Dictionary of supported configs
- * @type {Object.<string, string>}
- */
-const ConfigTypes = {
-    apiTokens: "api-tokens.json",
-    discordBots: "discord-bots.json",
-    websiteConfig: "website-config.json",
-    arduinos: "arduinos.json",
-    zeroTierConfig: "zeroTierConfig.json"
-};
-
-// Templates used for config generation
-const fileTemplates = {
-    "api-tokens.json": {
-        tokens: {
-            "javr-api": {},
-            "zerotier": null
-        }
-    },
-    "discord-bots.json": [],
-    "website-config.json": {
-        name: "JAVR_Domain",
-        managers: [],
-        autostart: {
-            discordBots: [],
-            servers: []
-        },
-        processEnv: "development",
-        rules: {}
-    },
-    "arduinos.json": {},
-    "zeroTierConfig.json": {
-        "network": null,
-        "token": null,
-    },
-};
-
 class ConfigManager {
+    #configTypes
+    #fileTemplates
+
+    constructor(configTypes = null, fileTemplates = null) {
+        if (ConfigManager.instance) {
+            return ConfigManager.instance;
+        }
+
+        if (!configTypes || !fileTemplates)
+            throw new Error("When calling the constructor for the first time, configTypes and fileTemplates must be provided.");
+
+        this.#configTypes = configTypes;
+        this.#fileTemplates = fileTemplates;
+        ConfigManager.instance = this;
+    }
+
     // Dictionary of loaded configs
-    static loadedConfigs = {};
+    loadedConfigs = {};
 
     // Load all configs from configsPath
-    static loadConfigs() {
+    loadConfigs() {
         const configsPath = "./configs";
 
         // All configs at path
@@ -64,11 +42,11 @@ class ConfigManager {
         }
 
         // Generate empty config files
-        for (const config of Object.values(ConfigTypes)) {
-            if (!Object.values(allConfigs).includes(config) || ConfigManager.isEmpty(`./configs/${config}`)) {
+        for (const config of Object.values(this.#configTypes)) {
+            if (!Object.values(allConfigs).includes(config) || this.isEmpty(`./configs/${config}`)) {
                 try {
                     // Load template for this config
-                    const data = fileTemplates[config];
+                    const data = this.#fileTemplates[config];
 
                     // Write template
                     writeFileSync(`./configs/${config}`, JSON.stringify(data));
@@ -87,9 +65,9 @@ class ConfigManager {
         // Iterate through all files in ./configs
         for (const config of allConfigs) {
             // Check if file is supported type of config
-            if (Object.values(ConfigTypes).includes(config)) {
+            if (Object.values(this.#configTypes).includes(config)) {
                 // Load config into the dictionary
-                ConfigManager.loadedConfigs[config] = JSON.parse(readFileSync(`./configs/${config}`, 'utf8'));
+                this.loadedConfigs[config] = JSON.parse(readFileSync(`./configs/${config}`, 'utf8'));
 
                 customLog(logName, `Config loaded ${config}`);
             }
@@ -99,7 +77,7 @@ class ConfigManager {
         }
     }
 
-    static isEmpty(filePath) {
+    isEmpty(filePath) {
         // Read the file
         const data = readFileSync(filePath, 'utf8');
 
@@ -115,7 +93,7 @@ class ConfigManager {
         }
     }
 
-    static saveConfig(configType, data) {
+    saveConfig(configType, data) {
         writeFileSync(`./configs/${configType}`, JSON.stringify(data), (err) => {
             if (err) customLog(logName, err);
             else customLog(logName, `Config ${configType} saved successfully.`);
@@ -123,13 +101,13 @@ class ConfigManager {
     }
 
     /**
-     * @desc Retrieves loaded config of given type.
+     * @desc Retrieves loaded config of a given type.
      * @param {string} configType - Item from ConfigTypes, type of config to get.
      * @returns {Object} - Content of the config
      */
-    static getConfig(configType) {
-        return ConfigManager.loadedConfigs[configType];
+    getConfig(configType) {
+        return this.loadedConfigs[configType];
     }
 }
 
-module.exports = {ConfigManager, ConfigTypes};
+module.exports = {ConfigManager};
