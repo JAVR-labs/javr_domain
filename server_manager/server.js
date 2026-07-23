@@ -103,7 +103,7 @@ async function cleanupTokenBlacklist() {
     await db.query('DELETE FROM token_blacklist WHERE expires_at < NOW()');
     customLog(serverIDName, 'Token blacklist cleanup finished successfully.');
   } catch (err) {
-    customLog(serverIDName, `CRITICAL Blacklist cleanup error: ${err.message}`);
+    customLog(serverIDName, `CRITICAL Blacklist cleanup error: ${err.message ?? err}`);
   }
 }
 
@@ -308,7 +308,7 @@ app.post('/login', async (req, res) => {
       loginFailed = true;
     }
   } catch (err) {
-    customLog(serverIDName, `Login error: ${err.message}`);
+    customLog(serverIDName, `Login error: ${err.message ?? err}`);
     return res.status(500).json({ message: 'Błąd bazy danych' });
   }
   if (loginFailed) {
