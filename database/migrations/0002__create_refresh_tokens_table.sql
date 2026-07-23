@@ -16,7 +16,8 @@ CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens (expires_at);
 
 -- Function to set the expiry date
 CREATE OR REPLACE FUNCTION set_expiry_date()
-RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS
+$$
 BEGIN
     -- Only set on INSERT if not provided, or only on specific updates
     IF TG_OP = 'INSERT' THEN

@@ -3,33 +3,35 @@ import { ConfigManager } from '@javr-domain/shared/ConfigManager.cjs';
 import { ConfigTypes, FileTemplates } from '@server-lib/ConfigSettings';
 
 async function getManagerBaseUrl() {
-  const configManager = new ConfigManager(ConfigTypes, FileTemplates);
-  const config = configManager.getConfig(ConfigTypes.websiteConfig);
-  const managers = config?.managers || [];
-  const manager = managers[0] || { ip: 'localhost', port: 3001 };
-  return `http://${manager.ip}:${manager.port}`;
+    const configManager = new ConfigManager(ConfigTypes, FileTemplates);
+    const config = configManager.getConfig(ConfigTypes.websiteConfig);
+    const managers = config?.managers || [];
+    const manager = managers[0] || { ip: 'localhost', port: 3001 };
+    return `http://${manager.ip}:${manager.port}`;
 }
 
 export async function blacklistToken(token) {
-  if (!token) return;
+    if (!token) return;
 
-  try {
-    const baseUrl = await getManagerBaseUrl();
-    await axios.post(`${baseUrl}/blacklist`, { token });
-  } catch (err) {
-    console.error('Failed to blacklist token:', err.message);
-  }
+    try {
+        const baseUrl = await getManagerBaseUrl();
+        await axios.post(`${baseUrl}/blacklist`, { token });
+    } catch (err) {
+        console.error('Failed to blacklist token:', err.message);
+    }
 }
 
 export async function isTokenBlacklisted(token) {
-  if (!token) return false;
+    if (!token) return false;
 
-  try {
-    const baseUrl = await getManagerBaseUrl();
-    const response = await axios.post(`${baseUrl}/check-blacklist`, { token });
-    return response.data.blacklisted === true;
-  } catch (err) {
-    console.error('Failed to check blacklist:', err.message);
-    return false;
-  }
+    try {
+        const baseUrl = await getManagerBaseUrl();
+        const response = await axios.post(`${baseUrl}/check-blacklist`, {
+            token,
+        });
+        return response.data.blacklisted === true;
+    } catch (err) {
+        console.error('Failed to check blacklist:', err.message);
+        return false;
+    }
 }

@@ -14,27 +14,31 @@ let servers = [];
 let discordBots = [];
 
 const statuses = {
-    "ONLINE": "online", "STARTING": "starting", "BUSY": "busy", "STOPPING": "stopping", "OFFLINE": "offline",
+    ONLINE: 'online',
+    STARTING: 'starting',
+    BUSY: 'busy',
+    STOPPING: 'stopping',
+    OFFLINE: 'offline',
 };
 const serverTypes = {
-    GENERIC: "generic",
-    GENERIC_EXEC: "generic_exec",
-    MINECRAFT: "minecraft",
-    ARMA: "arma",
-    TSSERVER: "tsserver",
-    TERRARIA: "terraria",
-    TMODLOADER: "tmodloader",
-    FACTORIO: "factorio",
-    SPACEENG: "spaceeng",
-    ARK: "ark",
-    PALWORLD: "palworld",
+    GENERIC: 'generic',
+    GENERIC_EXEC: 'generic_exec',
+    MINECRAFT: 'minecraft',
+    ARMA: 'arma',
+    TSSERVER: 'tsserver',
+    TERRARIA: 'terraria',
+    TMODLOADER: 'tmodloader',
+    FACTORIO: 'factorio',
+    SPACEENG: 'spaceeng',
+    ARK: 'ark',
+    PALWORLD: 'palworld',
 };
 const Events = {
-    INFO: "info",
+    INFO: 'info',
     STATUS_RESPONSE: 'status_response',
     STATUS_REQUEST: 'status_request',
-    ZT_RESPONSE: "zt_response",
-    ZT_REQUEST: "zt_request",
+    ZT_RESPONSE: 'zt_response',
+    ZT_REQUEST: 'zt_request',
     ZT_SEND_FORM: 'zt_send_form',
     REQUEST_FAILED: 'request_failed',
     START_SERVER_REQUEST: 'start_server_request',
@@ -50,10 +54,10 @@ const Events = {
 };
 
 let websocket;
-function setWebsocket(socket){
+function setWebsocket(socket) {
     websocket = socket;
 }
-function getWebsocket(){
+function getWebsocket() {
     return websocket;
 }
 
@@ -66,5 +70,5 @@ module.exports = {
     discordBots,
     websocket,
     setWebsocket,
-    getWebsocket
+    getWebsocket,
 };

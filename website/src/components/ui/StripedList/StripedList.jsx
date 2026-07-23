@@ -1,11 +1,11 @@
 import React from 'react';
 
-import styles from "./StripedList.module.scss"
+import styles from './StripedList.module.scss';
 
 const listClasses = `${styles.stripedList} list-group border-dark`;
-const listElClasses = "list-group-item d-flex";
+const listElClasses = 'list-group-item d-flex';
 
-function StripedList({children}) {
+function StripedList({ children }) {
     return (
         <ul className={listClasses}>
             {React.Children.map(children, (child, index) => (
@@ -14,7 +14,7 @@ function StripedList({children}) {
                 </li>
             ))}
         </ul>
-    )
+    );
 }
 
 export default StripedList;
