@@ -1,7 +1,7 @@
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const {serversWithHosts, serverList} = require("@server-lib/globals.js");
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { serversWithHosts, serverList } = require('@server-lib/globals.js');
 
-const logName = "Server_List";
+const logName = 'Server_List';
 
 /**
  * @class ServerList
@@ -46,7 +46,9 @@ class ServerList {
      */
     static getManagerNameByServer(serverID) {
         for (const managerHtmlID of Object.keys(serversWithHosts)) {
-            const serverNames = ServerList.getServerHtmlIDs(serversWithHosts[managerHtmlID]);
+            const serverNames = ServerList.getServerHtmlIDs(
+                serversWithHosts[managerHtmlID]
+            );
             if (serverNames.includes(serverID)) {
                 return managerHtmlID;
             }
@@ -73,9 +75,10 @@ class ServerList {
      * @param {String} serverID - ID of server to search for.
      * @returns {*} - server instance of given htmlID.
      */
-    static getServerByHtmlID = (serverID) => serverList.filter((s) => {
-        return s.htmlID === serverID;
-    })[0];
+    static getServerByHtmlID = (serverID) =>
+        serverList.filter((s) => {
+            return s.htmlID === serverID;
+        })[0];
 }
 
 module.exports = ServerList;

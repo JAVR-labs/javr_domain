@@ -2,7 +2,8 @@
 
 - `"(string) Minecraft version": "(string path) Path to JAVA"`
 
-> Note: If website tries to start a server that does not have JAVA version configured in this file default PATH executable will be used. 
+> Note: If website tries to start a server that does not have JAVA version configured in this file default PATH
+> executable will be used.
 
 ### Example config:
 

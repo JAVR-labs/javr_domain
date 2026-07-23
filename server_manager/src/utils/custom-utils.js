@@ -1,6 +1,6 @@
-const {statuses} = require("../lib/globals.js");
-const {ctrlc} = require('ctrlc-windows');
-const {customLog} = require("@javr-domain/shared/Logger.js");
+const { statuses } = require('../lib/globals.js');
+const { ctrlc } = require('ctrlc-windows');
+const { customLog } = require('@javr-domain/shared/Logger.js');
 
 /**
  * @description
@@ -19,25 +19,23 @@ function gracefulShutdown(pid) {
     if (process.platform === 'win32') {
         try {
             ctrlc(pid);
+        } catch (err) {
+            customLog('process-shutdown', `Error sending Ctrl+C: ${err}`);
         }
-        catch (err) {
-            customLog("process-shutdown", `Error sending Ctrl+C: ${err}`);
-        }
-    }
-    else {
+    } else {
         try {
             process.kill(pid, 'SIGTERM');
-        }
-        catch (err) {
-            customLog("process-shutdown", `Error sending SIGTERM: ${err}`);
+        } catch (err) {
+            customLog('process-shutdown', `Error sending SIGTERM: ${err}`);
         }
     }
 }
 
 //Find element by id in given list
-const getElementByHtmlID = (list, serverID) => list.filter((s) => {
-    return s.htmlID === serverID;
-})[0];
+const getElementByHtmlID = (list, serverID) =>
+    list.filter((s) => {
+        return s.htmlID === serverID;
+    })[0];
 
 // Sending servers statuses
 function emitDataGlobal(socket, event, data) {
@@ -49,7 +47,10 @@ function getUsedServers(servers) {
 
     for (let server of servers) {
         // If server is starting or stopping, it is in use
-        if (server.status === statuses.STARTING || server.status === statuses.STOPPING) {
+        if (
+            server.status === statuses.STARTING ||
+            server.status === statuses.STOPPING
+        ) {
             usedServers.push(server.htmlID);
         }
         // If server is online, check if it has players
@@ -71,5 +72,5 @@ module.exports = {
     getElementByHtmlID,
     emitDataGlobal,
     getUsedServers,
-    gracefulShutdown
+    gracefulShutdown,
 };

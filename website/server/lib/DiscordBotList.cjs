@@ -1,7 +1,7 @@
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const {discordBotsWithHosts, discordBots} = require('@server-lib/globals.js');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { discordBotsWithHosts, discordBots } = require('@server-lib/globals.js');
 
-const logName = "Discord_Bot_List";
+const logName = 'Discord_Bot_List';
 
 class DiscordBotList {
     static autostart = [];
@@ -14,10 +14,14 @@ class DiscordBotList {
         DiscordBotList.updateAllBots();
     }
 
-    static getStatuses(){
+    static getStatuses() {
         let states = [];
         for (const bot of discordBots) {
-            states.push({htmlID: bot.htmlID, displayName: bot.displayName, status: bot.status});
+            states.push({
+                htmlID: bot.htmlID,
+                displayName: bot.displayName,
+                status: bot.status,
+            });
         }
         return states;
     }
@@ -29,7 +33,7 @@ class DiscordBotList {
         discordBots.length = 0;
         // Extract individual Discord bots and add them to discordBots
         for (const botArr of botListArr) {
-            if (botArr != null){
+            if (botArr != null) {
                 for (const bot of botArr) {
                     discordBots.push(bot);
                 }
@@ -37,13 +41,14 @@ class DiscordBotList {
         }
     }
 
-    static getBotByHtmlID = (botID) => discordBots.filter((s) => {
-        return s.htmlID === botID;
-    })[0];
+    static getBotByHtmlID = (botID) =>
+        discordBots.filter((s) => {
+            return s.htmlID === botID;
+        })[0];
 
     static getBotsHtmlIDs(bots) {
         let names = [];
-        if (bots){
+        if (bots) {
             for (const bot of bots) {
                 names.push(bot.htmlID);
             }
@@ -51,9 +56,11 @@ class DiscordBotList {
         return names;
     }
 
-    static getManagerNameByServer(botHtmlID){
+    static getManagerNameByServer(botHtmlID) {
         for (const managerName of Object.keys(discordBotsWithHosts)) {
-            const botNames = DiscordBotList.getBotsHtmlIDs(discordBotsWithHosts[managerName]);
+            const botNames = DiscordBotList.getBotsHtmlIDs(
+                discordBotsWithHosts[managerName]
+            );
             if (botNames.includes(botHtmlID)) {
                 return managerName;
             }
