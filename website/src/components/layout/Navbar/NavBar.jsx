@@ -8,6 +8,7 @@ const urls = {
     ZeroTier: '/zero-tier',
     TerraMetrics: '/terra-metrics',
     Users: '/users',
+    Penpot: 'https://pen.realjavr.com',
 };
 
 function NavList() {
