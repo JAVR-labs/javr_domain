@@ -1,29 +1,41 @@
 const Statuses = {
-    "ONLINE": "online", "STARTING": "starting", "BUSY": "busy", "STOPPING": "stopping", "OFFLINE": "offline",
+    ONLINE: 'online',
+    STARTING: 'starting',
+    BUSY: 'busy',
+    STOPPING: 'stopping',
+    OFFLINE: 'offline',
 };
 const StatusIndicators = {
-    "online": "🟢", "starting": "🟡", "busy": "🟡", "stopping": "🟡", "offline": "🔴",
+    online: '🟢',
+    starting: '🟡',
+    busy: '🟡',
+    stopping: '🟡',
+    offline: '🔴',
 };
 const statusDisplayNames = {
-    "online": "Online", "starting": "Starting...", "busy": "Port busy", "stopping": "Stoping...", "offline": "Offline",
+    online: 'Online',
+    starting: 'Starting...',
+    busy: 'Port busy',
+    stopping: 'Stoping...',
+    offline: 'Offline',
 };
 const ServerTypes = {
-    "GENERIC": "generic",
-    "MINECRAFT": "minecraft",
-    "ARMA": "arma",
-    "TSSERVER": "tsserver"
+    GENERIC: 'generic',
+    MINECRAFT: 'minecraft',
+    ARMA: 'arma',
+    TSSERVER: 'tsserver',
 };
 const ServiceTypes = {
-    SERVER: "server",
-    DISCORD_BOT: "discordBot",
-    SERVER_MANAGER: "serverManager",
+    SERVER: 'server',
+    DISCORD_BOT: 'discordBot',
+    SERVER_MANAGER: 'serverManager',
 };
 const Events = {
-    INFO: "info",
+    INFO: 'info',
     STATUS_RESPONSE: 'status_response',
     STATUS_REQUEST: 'status_request',
-    ZT_RESPONSE: "zt_response",
-    ZT_REQUEST: "zt_request",
+    ZT_RESPONSE: 'zt_response',
+    ZT_REQUEST: 'zt_request',
     ZT_SEND_FORM: 'zt_send_form',
     ZT_REQUEST_FAILED: 'zt_request_failed',
     REQUEST_FAILED: 'request_failed',
@@ -39,12 +51,12 @@ const Events = {
     ARDUINO_MODIFY_LIGHT: 'arduino_modify_light',
 };
 const ArduinoEvents = {
-    CONNECT: "connect",
-    MESSAGE_END: "message-end",
-    STATUS_UPDATE: "status-update",
-    TIME_UPDATE_REQUEST: "time-update-request",
-    TIME_UPDATE_RESPONSE: "time-update-response",
-    MODIFY_LIGHT: "modify-light",
+    CONNECT: 'connect',
+    MESSAGE_END: 'message-end',
+    STATUS_UPDATE: 'status-update',
+    TIME_UPDATE_REQUEST: 'time-update-request',
+    TIME_UPDATE_RESPONSE: 'time-update-response',
+    MODIFY_LIGHT: 'modify-light',
 };
 
 // Arduino arrays
@@ -72,8 +84,8 @@ function setWebsiteIO(socket) {
 
 // Dict with rules
 const defaultRules = {
-    "allowTerrariumLedOverride": false,
-    "displayTerrariumCam": false
+    allowTerrariumLedOverride: false,
+    displayTerrariumCam: false,
 };
 
 module.exports = {
@@ -91,5 +103,5 @@ module.exports = {
     ServerTypes,
     arduinoBoards,
     ArduinoEvents,
-    defaultRules
+    defaultRules,
 };

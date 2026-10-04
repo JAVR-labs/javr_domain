@@ -1,5 +1,5 @@
-const AStartableServer = require("./AStartableServer.js");
-const {serverTypes} = require("../globals.js");
+const AStartableServer = require('./AStartableServer.js');
+const { serverTypes } = require('../globals.js');
 
 /**
  * @desc Class representing Arma server instance.
@@ -8,12 +8,25 @@ const {serverTypes} = require("../globals.js");
  */
 class ArmaServer extends AStartableServer {
     constructor({
-                    port, htmlID, displayName,
-                    filePath = '', startArgs, startingTime, cmd, debug
-                }) {
+        port,
+        htmlID,
+        displayName,
+        filePath = '',
+        startArgs,
+        startingTime,
+        cmd,
+        debug,
+    }) {
         super({
-            port, htmlID, displayName, type: serverTypes.ARMA,
-            filePath, startArgs, startingTime, cmd, debug
+            port,
+            htmlID,
+            displayName,
+            type: serverTypes.ARMA,
+            filePath,
+            startArgs,
+            startingTime,
+            cmd,
+            debug,
         });
 
         this.type = serverTypes.ARMA;

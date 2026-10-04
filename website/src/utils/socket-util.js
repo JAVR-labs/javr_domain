@@ -1,8 +1,8 @@
-import {io} from "socket.io-client";
-import {Events} from "@server-lib/globals.js";
+import { io } from 'socket.io-client';
+import { Events } from '@server-lib/globals.js';
 
 export const socket = io({
-    autoConnect: false
+    autoConnect: false,
 });
 
 export function connectSocket() {
@@ -35,22 +35,20 @@ export const initServicesSocket = (setData) => {
     };
 };
 
-
 export const innitZTSocket = (setData, setError) => {
     connectSocket();
 
-    socket.on(Events.ZT_RESPONSE, (data)=> {
-        setData(data)
+    socket.on(Events.ZT_RESPONSE, (data) => {
+        setData(data);
     });
 
-    socket.on(Events.ZT_REQUEST_FAILED, (err) => {   
+    socket.on(Events.ZT_REQUEST_FAILED, (err) => {
         setError('Error: ' + err);
     });
 
     return () => {
         socket.disconnect();
     };
-
 };
 
 export const requestSerivcesData = () => {

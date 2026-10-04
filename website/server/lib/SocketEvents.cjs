@@ -1,10 +1,13 @@
-const {Events, serverList, arduinoBoards, getWebsiteIO} = require("@server-lib/globals.js");
-const ServerManagerList = require("@server-lib/ServerManagerList.cjs");
-const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
+const {
+    Events,
+    serverList,
+    arduinoBoards,
+    getWebsiteIO,
+} = require('@server-lib/globals.js');
+const ServerManagerList = require('@server-lib/ServerManagerList.cjs');
+const DiscordBotList = require('@server-lib/DiscordBotList.cjs');
 
 class SocketEvents {
-
-
     /**
      * @desc Sends status response with all servers over given websocket.
      * @param websocket - Socket.io websocket, over which the data will be sent.
@@ -44,7 +47,10 @@ class SocketEvents {
      * @param websocket - Socket.io websocket, over which the data will be sent.
      */
     static requestNotAllowed(websocket) {
-        websocket.emit(Events.REQUEST_FAILED, "Ta funkcja została wyłączona w configu");
+        websocket.emit(
+            Events.REQUEST_FAILED,
+            'Ta funkcja została wyłączona w configu'
+        );
     }
 
     /**
@@ -60,7 +66,7 @@ class SocketEvents {
      * @desc Sends code and error message to client.
      * @param websocket - Socket. io websocket, over which the data will be sent. Default is default websocket.
      * @param error - error message from ZeroTier's API.
-    */
+     */
     static ztErrorResponse(websocket = getWebsiteIO(), error) {
         websocket.emit(Events.ZT_REQUEST_FAILED, error);
     }

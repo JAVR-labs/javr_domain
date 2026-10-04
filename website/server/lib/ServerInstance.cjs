@@ -1,24 +1,25 @@
 // External imports
-const socketIO = require("socket.io");
-const axios = require("axios");
-const {createServer} = require("http");
-const next = require("next");
+const socketIO = require('socket.io');
+const axios = require('axios');
+const { createServer } = require('http');
+const next = require('next');
 // Local imports
 const {
     Statuses,
     Events,
     setWebsiteIO,
-    serverManagers, defaultRules
-} = require("@server-lib/globals.js");
-const {DiscordBot} = require("./DiscordBot.cjs");
-const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const ServerManagerList = require("@server-lib/ServerManagerList.cjs");
-const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
-const SocketEvents = require("@server-lib/SocketEvents.cjs");
-const {getBoardByPID} = require("@server-utils/arduino-utils.cjs");
-const ServerList = require("@server-lib/ServerList.cjs");
-const ServerManager = require("@server-lib/ServerManager.cjs");
+    serverManagers,
+    defaultRules,
+} = require('@server-lib/globals.js');
+const { DiscordBot } = require('./DiscordBot.cjs');
+const DiscordBotList = require('@server-lib/DiscordBotList.cjs');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const ServerManagerList = require('@server-lib/ServerManagerList.cjs');
+const { ConfigManager } = require('@javr-domain/shared/ConfigManager.cjs');
+const SocketEvents = require('@server-lib/SocketEvents.cjs');
+const { getBoardByPID } = require('@server-utils/arduino-utils.cjs');
+const ServerList = require('@server-lib/ServerList.cjs');
+const ServerManager = require('@server-lib/ServerManager.cjs');
 const { ConfigTypes } = require('@server-lib/ConfigSettings');
 
 /**
@@ -47,14 +48,13 @@ class ServerInstance {
      * @returns {this} - Initialised instance of this object.
      */
     constructor({
-                    name: name,
-                    managers: managers,
-                    port: port = 3000,
-                    autostart: autostart,
-                    processEnv: processEnv,
-                    rules: rules = defaultRules
-                }) {
-
+        name: name,
+        managers: managers,
+        port: port = 3000,
+        autostart: autostart,
+        processEnv: processEnv,
+        rules: rules = defaultRules,
+    }) {
         // Ensure that only one instance of the class can be initialised at a time
         if (ServerInstance.#instance) {
             return ServerInstance.#instance;
@@ -68,7 +68,6 @@ class ServerInstance {
             serverManagers.push(new ServerManager(manager));
         }
 
-
         this.#processEnv = processEnv;
         this.name = name;
         this.port = port;
@@ -81,8 +80,8 @@ class ServerInstance {
      */
     async startWebsite() {
         // Server setup
-        const dev = this.#processEnv !== "production";
-        this.#app = next({dev});
+        const dev = this.#processEnv !== 'production';
+        this.#app = next({ dev });
         const handle = this.#app.getRequestHandler();
 
         // Ready the app
@@ -90,7 +89,9 @@ class ServerInstance {
 
         // Start the http server
         this.websiteServer = createServer((req, res) => {
-            req.websiteConfig = this.#configManager.getConfig(ConfigTypes.websiteConfig);
+            req.websiteConfig = this.#configManager.getConfig(
+                ConfigTypes.websiteConfig
+            );
             // noinspection JSIgnoredPromiseFromCall
             handle(req, res);
         });
@@ -98,14 +99,16 @@ class ServerInstance {
         // Listen on the port
         this.websiteServer.listen(this.port, (err) => {
             if (err) throw err;
-            customLog(this.name, `Server listening on http://localhost:${this.websiteServer.address().port}`);
+            customLog(
+                this.name,
+                `Server listening on http://localhost:${this.websiteServer.address().port}`
+            );
         });
 
         // Initializer functions
         await this.createSocket();
         this.startDiscordBots();
     }
-
 
     /**
      * @desc Starts websocket connections.
@@ -116,8 +119,8 @@ class ServerInstance {
         const websiteIO = socketIO(this.websiteServer, {
             cors: {
                 origin: '*',
-                methods: ['GET', 'POST']
-            }
+                methods: ['GET', 'POST'],
+            },
         });
 
         setWebsiteIO(websiteIO);
@@ -130,7 +133,7 @@ class ServerInstance {
             }
 
             const cookies = Object.fromEntries(
-                cookieHeader.split(';').map(c => {
+                cookieHeader.split(';').map((c) => {
                     const [key, ...val] = c.trim().split('=');
                     return [key.trim(), val.join('=')];
                 })
@@ -143,19 +146,20 @@ class ServerInstance {
             }
 
             try {
-                const config = this.#configManager.getConfig(ConfigTypes.websiteConfig);
+                const config = this.#configManager.getConfig(
+                    ConfigTypes.websiteConfig
+                );
                 const managers = config?.managers || [];
-                const manager = managers[0] || {ip: 'localhost', port: 3001};
+                const manager = managers[0] || { ip: 'localhost', port: 3001 };
 
                 const response = await axios.post(
                     `http://${manager.ip}:${manager.port}/verify-token`,
-                    {token}
+                    { token }
                 );
 
                 socket.data.user = response.data.user;
                 next();
-            }
-            catch (err) {
+            } catch (err) {
                 const message = err.response?.data?.message || err.message;
                 customLog(this.name, `Socket auth failed: ${message}`);
                 next(new Error(message));
@@ -163,7 +167,7 @@ class ServerInstance {
         });
 
         // When client connects to the server
-        websiteIO.on(Events.CONNECTION, clientSocket => {
+        websiteIO.on(Events.CONNECTION, (clientSocket) => {
             let ip = clientSocket.handshake.address.split(':');
             ip = ip[ip.length - 1];
 
@@ -178,20 +182,25 @@ class ServerInstance {
                     customLog(this.name, `Status request received from ${ip}`);
 
                     // Check if any manager is connected
-                    const connectedManagers = ServerManagerList.getConnectedManagers();
+                    const connectedManagers =
+                        ServerManagerList.getConnectedManagers();
                     if (connectedManagers.length > 0) {
-
                         // Get names for logs
-                        let managerNames = ServerManagerList.getConnectedManagersNames();
-                        managerNames = managerNames.toString().replace(',', ', ');
-                        customLog(this.name, `Forwarding request/s to ${managerNames}`);
+                        let managerNames =
+                            ServerManagerList.getConnectedManagersNames();
+                        managerNames = managerNames
+                            .toString()
+                            .replace(',', ', ');
+                        customLog(
+                            this.name,
+                            `Forwarding request/s to ${managerNames}`
+                        );
 
                         // Emit requests for all connected managers
                         for (const manager of connectedManagers) {
                             SocketEvents.statusRequest(manager.socket);
                         }
-                    }
-                    else {
+                    } else {
                         // If none are connected send current state immediately
                         customLog(this.name, `No server managers connected`);
                         SocketEvents.statusResponse(clientSocket);
@@ -200,68 +209,112 @@ class ServerInstance {
                 }
             });
 
-
             // Requested server manager start
-            clientSocket.on(Events.START_SERVER_MANAGER_REQUEST, managerID => {
-                const serverManager = ServerManagerList.getManagerByName(managerID);
-                customLog(this.name, `${ip} requested ${managerID} start`);
+            clientSocket.on(
+                Events.START_SERVER_MANAGER_REQUEST,
+                (managerID) => {
+                    const serverManager =
+                        ServerManagerList.getManagerByName(managerID);
+                    customLog(this.name, `${ip} requested ${managerID} start`);
 
-                if (serverManager) {
-                    if (serverManager.status === Statuses.OFFLINE) {
-                        customLog(this.name, `Sending wakeup packet to ${managerID}`);
-                        serverManager.wakeUp(clientSocket);
-                    }
-                    else {
-                        customLog(this.name, `Request denied, manager is not offline`);
-                        SocketEvents.requestFailed(clientSocket, "Menadżer nie jest offline");
+                    if (serverManager) {
+                        if (serverManager.status === Statuses.OFFLINE) {
+                            customLog(
+                                this.name,
+                                `Sending wakeup packet to ${managerID}`
+                            );
+                            serverManager.wakeUp(clientSocket);
+                        } else {
+                            customLog(
+                                this.name,
+                                `Request denied, manager is not offline`
+                            );
+                            SocketEvents.requestFailed(
+                                clientSocket,
+                                'Menadżer nie jest offline'
+                            );
+                        }
+                    } else {
+                        customLog(
+                            this.name,
+                            `Request denied ${managerID} not found`
+                        );
+                        SocketEvents.requestFailed(
+                            clientSocket,
+                            `Nie znaleziono menadżera ${managerID}`
+                        );
                     }
                 }
-                else {
-                    customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
-                }
-            });
+            );
 
             // Requested server manager stop
-            clientSocket.on(Events.STOP_SERVER_MANAGER_REQUEST, managerID => {
-                const serverManager = ServerManagerList.getManagerByName(managerID);
+            clientSocket.on(Events.STOP_SERVER_MANAGER_REQUEST, (managerID) => {
+                const serverManager =
+                    ServerManagerList.getManagerByName(managerID);
                 customLog(this.name, `${ip} requested ${managerID} stop`);
 
                 if (serverManager) {
                     if (serverManager.status === Statuses.ONLINE) {
-                        customLog(this.name, `Sending sleep request to ${managerID}`);
+                        customLog(
+                            this.name,
+                            `Sending sleep request to ${managerID}`
+                        );
                         serverManager.sleep(clientSocket);
+                    } else {
+                        customLog(
+                            this.name,
+                            `Request denied, manager is not online`
+                        );
+                        SocketEvents.requestFailed(
+                            clientSocket,
+                            'Menadżer nie jest online'
+                        );
                     }
-                    else {
-                        customLog(this.name, `Request denied, manager is not online`);
-                        SocketEvents.requestFailed(clientSocket, "Menadżer nie jest online");
-                    }
-                }
-                else {
-                    customLog(this.name, `Request denied ${managerID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera ${managerID}`);
+                } else {
+                    customLog(
+                        this.name,
+                        `Request denied ${managerID} not found`
+                    );
+                    SocketEvents.requestFailed(
+                        clientSocket,
+                        `Nie znaleziono menadżera ${managerID}`
+                    );
                 }
             });
-
 
             // Requested server start
             clientSocket.on(Events.START_SERVER_REQUEST, (serverID) => {
                 customLog(serverID, `${ip} requested server start`);
-                const serverManager = ServerManagerList.getManagerByServerID(serverID);
+                const serverManager =
+                    ServerManagerList.getManagerByServerID(serverID);
 
                 // Get requested server's status
                 if (serverManager && serverManager.status === Statuses.ONLINE) {
-                    SocketEvents.startServerRequest(serverManager.socket, serverID, clientSocket.id);
+                    SocketEvents.startServerRequest(
+                        serverManager.socket,
+                        serverID,
+                        clientSocket.id
+                    );
 
-                    customLog(this.name, `Request forwarded to ${serverManager.htmlID}`);
-                }
-                else if (serverManager) {
-                    customLog(this.name, `${serverManager.htmlID} not online, sending wake up packet`);
+                    customLog(
+                        this.name,
+                        `Request forwarded to ${serverManager.htmlID}`
+                    );
+                } else if (serverManager) {
+                    customLog(
+                        this.name,
+                        `${serverManager.htmlID} not online, sending wake up packet`
+                    );
                     serverManager.wakeUp(clientSocket);
-                }
-                else {
-                    customLog(this.name, `Server Manager for ${serverID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera dla ${serverID}`);
+                } else {
+                    customLog(
+                        this.name,
+                        `Server Manager for ${serverID} not found`
+                    );
+                    SocketEvents.requestFailed(
+                        clientSocket,
+                        `Nie znaleziono menadżera dla ${serverID}`
+                    );
                 }
             });
 
@@ -269,22 +322,36 @@ class ServerInstance {
             clientSocket.on(Events.STOP_SERVER_REQUEST, (serverID) => {
                 customLog(serverID, `${ip} requested server stop`);
 
-                const serverManager = ServerManagerList.getManagerByServerID(serverID);
+                const serverManager =
+                    ServerManagerList.getManagerByServerID(serverID);
 
                 if (serverManager && serverManager.status === Statuses.ONLINE) {
-                    SocketEvents.stopServerRequest(serverManager.socket, serverID, clientSocket.id);
-                    customLog(this.name, `Request forwarded to ${serverManager.htmlID}`);
-                }
-                else if (serverManager) {
-                    customLog(this.name, `${serverManager.htmlID} not online, sending wake up packet`);
+                    SocketEvents.stopServerRequest(
+                        serverManager.socket,
+                        serverID,
+                        clientSocket.id
+                    );
+                    customLog(
+                        this.name,
+                        `Request forwarded to ${serverManager.htmlID}`
+                    );
+                } else if (serverManager) {
+                    customLog(
+                        this.name,
+                        `${serverManager.htmlID} not online, sending wake up packet`
+                    );
                     serverManager.wakeUp(clientSocket);
-                }
-                else {
-                    customLog(this.name, `Server Manager for ${serverID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera dla ${serverID}`);
+                } else {
+                    customLog(
+                        this.name,
+                        `Server Manager for ${serverID} not found`
+                    );
+                    SocketEvents.requestFailed(
+                        clientSocket,
+                        `Nie znaleziono menadżera dla ${serverID}`
+                    );
                 }
             });
-
 
             // Request bot start
             clientSocket.on(Events.START_DBOT_REQUEST, (botID) => {
@@ -293,35 +360,51 @@ class ServerInstance {
                 // Search for bot in the list
                 const bot = DiscordBotList.getBotByHtmlID(botID);
 
-                const serverManager = ServerManagerList.getManagerByBotID(botID);
+                const serverManager =
+                    ServerManagerList.getManagerByBotID(botID);
 
                 // Check if server manager was found
                 if (!serverManager) {
-                    customLog(this.name, `Server Manager for ${botID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera dla ${botID}`);
+                    customLog(
+                        this.name,
+                        `Server Manager for ${botID} not found`
+                    );
+                    SocketEvents.requestFailed(
+                        clientSocket,
+                        `Nie znaleziono menadżera dla ${botID}`
+                    );
                 }
                 // Check if bot is on local machine
                 else if (serverManager.htmlID === 'local') {
-                    if (bot.status === Statuses.OFFLINE)
-                        bot.start();
+                    if (bot.status === Statuses.OFFLINE) bot.start();
                     else {
-                        customLog(this.name, "Request denied, bot not offline");
-                        SocketEvents.requestFailed(clientSocket, "Bot nie jest offline");
+                        customLog(this.name, 'Request denied, bot not offline');
+                        SocketEvents.requestFailed(
+                            clientSocket,
+                            'Bot nie jest offline'
+                        );
                     }
-                }
-                else {
+                } else {
                     // Get requested server's status
                     if (serverManager.status === Statuses.ONLINE) {
-                        SocketEvents.startDBotRequest(serverManager.socket, botID, clientSocket.id);
+                        SocketEvents.startDBotRequest(
+                            serverManager.socket,
+                            botID,
+                            clientSocket.id
+                        );
 
-                        customLog(this.name, `Request forwarded to ${serverManager.htmlID}`);
-                    }
-                    else {
-                        customLog(this.name, `${serverManager.htmlID} not online, sending wake up packet`);
+                        customLog(
+                            this.name,
+                            `Request forwarded to ${serverManager.htmlID}`
+                        );
+                    } else {
+                        customLog(
+                            this.name,
+                            `${serverManager.htmlID} not online, sending wake up packet`
+                        );
                         serverManager.wakeUp(clientSocket);
                     }
                 }
-
             });
 
             // Requested server stop
@@ -331,133 +414,177 @@ class ServerInstance {
                 // Search for bot in the list
                 const bot = DiscordBotList.getBotByHtmlID(botID);
 
-                const serverManager = ServerManagerList.getManagerByBotID(botID);
+                const serverManager =
+                    ServerManagerList.getManagerByBotID(botID);
 
                 // Check if bot is on local machine
                 if (!serverManager) {
-                    customLog(this.name, `Server Manager for ${botID} not found`);
-                    SocketEvents.requestFailed(clientSocket, `Nie znaleziono menadżera dla ${botID}`);
-                }
-                else if (serverManager.htmlID === 'local') {
-                    if (bot.status === Statuses.ONLINE || bot.status === Statuses.STARTING) {
+                    customLog(
+                        this.name,
+                        `Server Manager for ${botID} not found`
+                    );
+                    SocketEvents.requestFailed(
+                        clientSocket,
+                        `Nie znaleziono menadżera dla ${botID}`
+                    );
+                } else if (serverManager.htmlID === 'local') {
+                    if (
+                        bot.status === Statuses.ONLINE ||
+                        bot.status === Statuses.STARTING
+                    ) {
                         bot.stop();
+                    } else {
+                        SocketEvents.requestFailed(
+                            clientSocket,
+                            'Bot nie jest online'
+                        );
+                        customLog(this.name, 'Request failed, bot not online');
                     }
-                    else {
-                        SocketEvents.requestFailed(clientSocket, "Bot nie jest online");
-                        customLog(this.name, "Request failed, bot not online");
-                    }
-                }
-                else {
+                } else {
                     // Get requested server's status
                     if (serverManager.status === Statuses.ONLINE) {
-                        SocketEvents.stopDBotRequest(serverManager.socket, botID, clientSocket.id);
+                        SocketEvents.stopDBotRequest(
+                            serverManager.socket,
+                            botID,
+                            clientSocket.id
+                        );
 
-                        customLog(this.name, `Request forwarded to ${serverManager.htmlID}`);
-                    }
-                    else {
-                        customLog(this.name, `${serverManager.htmlID} not online, sending wake up packet`);
+                        customLog(
+                            this.name,
+                            `Request forwarded to ${serverManager.htmlID}`
+                        );
+                    } else {
+                        customLog(
+                            this.name,
+                            `${serverManager.htmlID} not online, sending wake up packet`
+                        );
                         serverManager.wakeUp(clientSocket);
                     }
                 }
-
             });
 
             //
             // ZeroTier
             //
 
-            const zeroTierConfig = this.#configManager.getConfig(ConfigTypes.zeroTierConfig);
+            const zeroTierConfig = this.#configManager.getConfig(
+                ConfigTypes.zeroTierConfig
+            );
             const zeroTierToken = zeroTierConfig.token;
 
             //Handling ZeroTier Request
             clientSocket.on(Events.ZT_REQUEST, () => {
-
                 customLog(this.name, `${ip} requested ZeroTier information`);
-
 
                 if (zeroTierConfig.network) {
                     let config = {
-                        "method": "GET",
-                        "maxBodyLength": "Infinity",
-                        "url": `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member`,
-                        "headers": {
-                            "Authorization": `${zeroTierToken}`
-                        }
+                        method: 'GET',
+                        maxBodyLength: 'Infinity',
+                        url: `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member`,
+                        headers: {
+                            Authorization: `${zeroTierToken}`,
+                        },
                     };
-                    axios.request(config)
+                    axios
+                        .request(config)
                         .then((response) => {
                             SocketEvents.ztResponse(websiteIO, response.data);
                         })
                         .catch((error) => {
-                            customLog(this.name, `Error fetching data from ZeroTier: ${error}`);
-                            SocketEvents.ztErrorResponse(websiteIO, `${error.response.statusText} ${error.response.status}`);
+                            customLog(
+                                this.name,
+                                `Error fetching data from ZeroTier: ${error}`
+                            );
+                            SocketEvents.ztErrorResponse(
+                                websiteIO,
+                                `${error.response.statusText} ${error.response.status}`
+                            );
                         });
-                }
-                else {
-                    customLog(this.name, `No ZeroTier configuration found. Skipping...`);
-                    SocketEvents.ztErrorResponse(websiteIO, `Brak konfiguracji dla ZeroTier.`);
+                } else {
+                    customLog(
+                        this.name,
+                        `No ZeroTier configuration found. Skipping...`
+                    );
+                    SocketEvents.ztErrorResponse(
+                        websiteIO,
+                        `Brak konfiguracji dla ZeroTier.`
+                    );
                 }
             });
 
-
             //Sending user edit form to ZeroTier api
             clientSocket.on(Events.ZT_SEND_FORM, (data, userId) => {
-
-                customLog(this.name, `${ip} requested change of ZeroTier user - (${userId}) ${data.name} ${data.description}`);
+                customLog(
+                    this.name,
+                    `${ip} requested change of ZeroTier user - (${userId}) ${data.name} ${data.description}`
+                );
 
                 //Prepare package to send
                 let dataToPost = {
-                    "name": data.name,
-                    "description": data.description,
-                    "config":
-                        {
-                            "authorized": data.authorized
-                        }
+                    name: data.name,
+                    description: data.description,
+                    config: {
+                        authorized: data.authorized,
+                    },
                 };
 
                 if (zeroTierConfig.network) {
                     let postConfig = {
-                        "method": "POST",
-                        "maxBodyLength": "Infinity",
-                        "url": `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member/${userId}`,
-                        "data": JSON.stringify(dataToPost),
-                        "headers": {
-                            "Authorization": `${zeroTierToken}`
-                        }
+                        method: 'POST',
+                        maxBodyLength: 'Infinity',
+                        url: `https://api.zerotier.com/api/v1/network/${zeroTierConfig.network}/member/${userId}`,
+                        data: JSON.stringify(dataToPost),
+                        headers: {
+                            Authorization: `${zeroTierToken}`,
+                        },
                     };
-                    axios.request(postConfig)
+                    axios
+                        .request(postConfig)
                         .then(() => {
-                            customLog(this.name, `${ip} changed ZeroTier user - (${userId}) ${data.name} ${data.description}`);
+                            customLog(
+                                this.name,
+                                `${ip} changed ZeroTier user - (${userId}) ${data.name} ${data.description}`
+                            );
                         })
                         .catch((error) => {
-                            customLog(this.name, `Error fetching data from ZeroTier: ${error.response.data}`);
+                            customLog(
+                                this.name,
+                                `Error fetching data from ZeroTier: ${error.response.data}`
+                            );
                         });
+                } else {
+                    customLog(
+                        this.name,
+                        `No ZeroTier configuration found. Skipping...`
+                    );
                 }
-                else {
-                    customLog(this.name, `No ZeroTier configuration found. Skipping...`);
-                }
-
             });
 
             //
             // Arduino
             //
 
-            clientSocket.on(Events.ARDUINO_MODIFY_LIGHT, (arduinoPID, lightParams) => {
-                if (this.rules.allowTerrariumLedOverride) {
-                    const board = getBoardByPID(arduinoPID);
-                    if (board) {
-                        lightParams["override"] = Number(lightParams["override"]);
-                        board.setLight(lightParams);
-                    }
-                    else {
-                        customLog(this.name, `Failed to forward light update for board ${arduinoPID}: Board not found`);
+            clientSocket.on(
+                Events.ARDUINO_MODIFY_LIGHT,
+                (arduinoPID, lightParams) => {
+                    if (this.rules.allowTerrariumLedOverride) {
+                        const board = getBoardByPID(arduinoPID);
+                        if (board) {
+                            lightParams['override'] = Number(
+                                lightParams['override']
+                            );
+                            board.setLight(lightParams);
+                        } else {
+                            customLog(
+                                this.name,
+                                `Failed to forward light update for board ${arduinoPID}: Board not found`
+                            );
+                        }
+                    } else {
+                        SocketEvents.requestNotAllowed(clientSocket);
                     }
                 }
-                else {
-                    SocketEvents.requestNotAllowed(clientSocket);
-                }
-            });
+            );
         });
     }
 
@@ -465,10 +592,12 @@ class ServerInstance {
      * @desc Starts all discord bots mentioned in `this.discordBotStart`
      */
     startDiscordBots() {
-        customLog(this.name, "Starting Discord bots");
+        customLog(this.name, 'Starting Discord bots');
 
         // Get bots and their parameters from config file
-        const discordBotsConfig = this.#configManager.getConfig(ConfigTypes.discordBots);
+        const discordBotsConfig = this.#configManager.getConfig(
+            ConfigTypes.discordBots
+        );
 
         // Temporary variable holding local bots
         let discordBots = [];
@@ -479,36 +608,42 @@ class ServerInstance {
         DiscordBotList.updateBots('local', discordBots);
 
         // Autostart bots
-        const botsToStart = this.autostart["discordBots"];
+        const botsToStart = this.autostart['discordBots'];
         if (botsToStart) {
-            customLog(this.name, "Starting discord bots...");
+            customLog(this.name, 'Starting discord bots...');
             for (const name of botsToStart) {
                 const bot = DiscordBotList.getBotByHtmlID(name);
                 if (bot) {
                     bot.start();
-                }
-                else {
-                    customLog(this.name, `Failed to start ${name}: Bot not defined`);
+                } else {
+                    customLog(
+                        this.name,
+                        `Failed to start ${name}: Bot not defined`
+                    );
                 }
             }
         }
         // Autostart servers (for future use, currently servers are not supported from website)
-        const serversToStart = this.autostart["servers"];
+        const serversToStart = this.autostart['servers'];
         if (serversToStart) {
-            customLog(this.name, "Starting servers...");
+            customLog(this.name, 'Starting servers...');
             for (const name of serversToStart) {
                 const server = ServerList.getServerByHtmlID(name);
                 if (server) {
                     // Check if server can be launched
                     if (server.startServer) {
                         server.startServer();
+                    } else {
+                        customLog(
+                            this.name,
+                            `Failed to start ${name}: Server not executable`
+                        );
                     }
-                    else {
-                        customLog(this.name, `Failed to start ${name}: Server not executable`);
-                    }
-                }
-                else {
-                    customLog(this.name, `Failed to start ${name}: Server not defined`);
+                } else {
+                    customLog(
+                        this.name,
+                        `Failed to start ${name}: Server not defined`
+                    );
                 }
             }
         }

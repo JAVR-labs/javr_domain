@@ -1,7 +1,7 @@
 const ServerList = require('@server-lib/ServerList.cjs');
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const {Statuses, serverManagers} = require('@server-lib/globals.js');
-const DiscordBotList = require("@server-lib/DiscordBotList.cjs");
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { Statuses, serverManagers } = require('@server-lib/globals.js');
+const DiscordBotList = require('@server-lib/DiscordBotList.cjs');
 
 const logName = 'Server_Managers';
 
@@ -10,7 +10,6 @@ const logName = 'Server_Managers';
  * @desc Keeps the track of all defined server managers and handles all operations on managerList.
  */
 class ServerManagerList {
-
     /**
      * @desc Checks if any `serverManager` is connected.
      * @returns {boolean} - Returns `true` if at least one server manager is connected, `false` if none are.
@@ -85,7 +84,10 @@ class ServerManagerList {
     static getStatuses() {
         let states = [];
         for (const serverManager of serverManagers) {
-            states.push({htmlID: serverManager.htmlID, status: serverManager.status});
+            states.push({
+                htmlID: serverManager.htmlID,
+                status: serverManager.status,
+            });
         }
         return states;
     }
@@ -97,16 +99,16 @@ class ServerManagerList {
     static getConnectedManagersNames() {
         let names = [];
         for (const manager of this.getConnectedManagers()) {
-            names.push(manager.htmlID)
+            names.push(manager.htmlID);
         }
         return names;
     }
 
-    static getManagerByBotID(botHtmlID){
+    static getManagerByBotID(botHtmlID) {
         // Get name from bot list
         const managerName = DiscordBotList.getManagerNameByServer(botHtmlID);
-        if (managerName === 'local'){
-            return {htmlID: 'local'}
+        if (managerName === 'local') {
+            return { htmlID: 'local' };
         }
 
         for (const serverManager of serverManagers) {

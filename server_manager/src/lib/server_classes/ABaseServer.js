@@ -1,10 +1,10 @@
-const net = require("node:net");
-const dgram = require("node:dgram");
+const net = require('node:net');
+const dgram = require('node:dgram');
 
-const {statuses} = require("../globals.js");
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const SocketEvents = require("../SocketEvents.js");
-const {ConfigManager} = require("@javr-domain/shared/ConfigManager.cjs");
+const { statuses } = require('../globals.js');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const SocketEvents = require('../SocketEvents.js');
+const { ConfigManager } = require('@javr-domain/shared/ConfigManager.cjs');
 
 /**
  * @desc Abstract base class for all server types.
@@ -18,7 +18,7 @@ class ABaseServer {
      * @param {keyof serverTypes || string} type - Type of the server from statuses.
      * @param {number | undefined} maxPlayers - Player limit on the server.
      */
-    constructor({port, htmlID, displayName, type, maxPlayers}) {
+    constructor({ port, htmlID, displayName, type, maxPlayers }) {
         // Ensure that this class is abstract
         if (this.constructor === ABaseServer) {
             throw new Error("Abstract classes can't be instantiated.");
@@ -50,8 +50,7 @@ class ABaseServer {
                 if (this.status !== statuses.STOPPING) {
                     this.status = statuses.ONLINE;
                 }
-            }
-            else {
+            } else {
                 if (this.status !== statuses.STARTING) {
                     this.status = statuses.OFFLINE;
                 }
@@ -93,7 +92,7 @@ class ABaseServer {
                 SocketEvents.statusResponse();
             }
             this.lastStatus = this.status;
-            this.updateStatus()
+            this.updateStatus();
         }, 1000);
     }
 
@@ -111,10 +110,9 @@ class ABaseServer {
      * @param {string} name - Name of the player to remove.
      */
     removePlayer(name) {
-        this.currPlayers = this.currPlayers.filter(player => player !== name);
+        this.currPlayers = this.currPlayers.filter((player) => player !== name);
         SocketEvents.statusResponse();
     }
-
 
     /**
      * Converts the instance data to a JSON object.
@@ -125,14 +123,14 @@ class ABaseServer {
      */
     toJson(additionalFields = {}) {
         return {
-            "port": this.port,
-            "htmlID": this.htmlID,
-            "displayName": this.displayName,
-            "type": this.type,
-            "status": this.status,
-            "maxPlayers": this.maxPlayers,
-            "currPlayers": this.currPlayers,
-            ...additionalFields
+            port: this.port,
+            htmlID: this.htmlID,
+            displayName: this.displayName,
+            type: this.type,
+            status: this.status,
+            maxPlayers: this.maxPlayers,
+            currPlayers: this.currPlayers,
+            ...additionalFields,
         };
     }
 }

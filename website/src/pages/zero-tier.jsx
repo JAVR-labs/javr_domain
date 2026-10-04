@@ -1,17 +1,17 @@
 import NavBar from '@/src/components/layout/Navbar/NavBar.jsx';
 import UniversalHead from '@components/misc/UniversalHead.jsx';
-import Footer from "@/src/components/layout/Footer/Footer.jsx";
+import Footer from '@/src/components/layout/Footer/Footer.jsx';
 import styles from '@/src/styles/zt.module.scss';
-import {mainDivClass} from "@styles/global.bootstrap.js";
+import { mainDivClass } from '@styles/global.bootstrap.js';
 import StripedList from '../components/ui/StripedList/StripedList';
-import React, {useEffect, useState} from 'react';
-import {innitZTSocket, requestZTData, ztSendForm} from '@utils/socket-util';
-import ZeroTierUserList from "@components/ui/ZeroTierUserList";
-import ZeroTierForm from "@components/ui/ZeroTierForm";
+import React, { useEffect, useState } from 'react';
+import { innitZTSocket, requestZTData, ztSendForm } from '@utils/socket-util';
+import ZeroTierUserList from '@components/ui/ZeroTierUserList';
+import ZeroTierForm from '@components/ui/ZeroTierForm';
 
 function MainContent() {
     const [users, setUsers] = useState([]);
-    const [usersError, setUsersError] = useState("");
+    const [usersError, setUsersError] = useState('');
     const [editUser, setEditUser] = useState(null);
     const [editFormData, setEditFormData] = useState({
         name: '',
@@ -36,7 +36,7 @@ function MainContent() {
     const pickEditUser = (user) => {
         window.scrollTo({
             top: 0,
-            behavior: "smooth"
+            behavior: 'smooth',
         });
 
         setEditUser(user);
@@ -44,41 +44,44 @@ function MainContent() {
         setEditFormData({
             name: user.name || '',
             description: user.description || '',
-            authorized: user.config.authorized !== undefined ? user.config.authorized : false,
+            authorized:
+                user.config.authorized !== undefined
+                    ? user.config.authorized
+                    : false,
         });
     };
-
 
     // Form input change handler
     const handleEditChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setEditFormData(prev => ({
+        setEditFormData((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : value,
         }));
     };
-
 
     // Submit edited user data
     const handleEditSubmit = (e) => {
         e.preventDefault();
 
-        setUsers(users.map(u => {
-            if (u === editUser) {
-                return {
-                    ...u,
-                    name: editFormData.name,
-                    description: editFormData.description,
-                    config: {
-                        ...u.config,
-                        authorized: [editFormData.authorized]
-                    }
-                };
-            }
-            return u;
-        }));
+        setUsers(
+            users.map((u) => {
+                if (u === editUser) {
+                    return {
+                        ...u,
+                        name: editFormData.name,
+                        description: editFormData.description,
+                        config: {
+                            ...u.config,
+                            authorized: [editFormData.authorized],
+                        },
+                    };
+                }
+                return u;
+            })
+        );
 
-        ztSendForm(editFormData, editUser.config.address)
+        ztSendForm(editFormData, editUser.config.address);
     };
 
     // Close & cancel editing
@@ -128,16 +131,16 @@ function Home() {
     return (
         <>
             {/* Head */}
-            <UniversalHead/>
+            <UniversalHead />
 
             {/* Body */}
             <div className={`${styles.bgImgZt} ${mainDivClass}`}>
-                <NavBar/>
-                <MainContent/>
+                <NavBar />
+                <MainContent />
             </div>
 
             {/* Footer */}
-            <Footer/>
+            <Footer />
         </>
     );
 }

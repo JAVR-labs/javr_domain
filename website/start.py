@@ -59,7 +59,6 @@ class NodeProcess:
             self.process.terminate()
 
 
-
 if __name__ == '__main__':
     # Setup arguments
     arg_parser = argparse.ArgumentParser()

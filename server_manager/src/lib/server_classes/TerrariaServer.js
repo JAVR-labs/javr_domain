@@ -1,9 +1,9 @@
-const AStartableServer = require("./AStartableServer.js");
-const {serverTypes} = require("../globals.js");
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const path = require("node:path");
-const fs = require("node:fs");
-const {platform} = require("node:os");
+const AStartableServer = require('./AStartableServer.js');
+const { serverTypes } = require('../globals.js');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const path = require('node:path');
+const fs = require('node:fs');
+const { platform } = require('node:os');
 
 /**
  * @desc Class representing TmodLoader server instance.
@@ -29,20 +29,39 @@ class TerrariaServer extends AStartableServer {
      * @param {number} maxPlayers - Maximum number of players allowed on the server.
      */
     constructor({
-                    port, htmlID, displayName,
-                    filePath = null, workingDir = null, startArgs = [], startingTime, cmd, debug,
-                    maxPlayers = 0, configPath, worldPath, motd, useSteam = false, lobbyType = "friends"
-                }) {
+        port,
+        htmlID,
+        displayName,
+        filePath = null,
+        workingDir = null,
+        startArgs = [],
+        startingTime,
+        cmd,
+        debug,
+        maxPlayers = 0,
+        configPath,
+        worldPath,
+        motd,
+        useSteam = false,
+        lobbyType = 'friends',
+    }) {
         if (workingDir) {
-            let serverName = "TerrariaServer";
-            if (platform() === "win32") {
-                serverName += "exe";
+            let serverName = 'TerrariaServer';
+            if (platform() === 'win32') {
+                serverName += 'exe';
             }
             filePath = path.join(workingDir, serverName);
         }
         super({
-            port, htmlID, displayName, type: serverTypes.TERRARIA,
-            filePath, startArgs, startingTime, cmd, debug
+            port,
+            htmlID,
+            displayName,
+            type: serverTypes.TERRARIA,
+            filePath,
+            startArgs,
+            startingTime,
+            cmd,
+            debug,
         });
 
         this.configPath = configPath;
@@ -66,15 +85,17 @@ class TerrariaServer extends AStartableServer {
      * @param {ChildProcess} process
      */
     handleOutput(process) {
-        process.stdout.on("data", dataBuff => {
+        process.stdout.on('data', (dataBuff) => {
             const data = String(dataBuff).trim();
             // Add player who joined
-            if (data.includes("has joined")) this.addPlayer(this.getPlayerName(data));
+            if (data.includes('has joined'))
+                this.addPlayer(this.getPlayerName(data));
             // Remove player
-            if (data.includes("has left")) this.removePlayer(this.getPlayerName(data));
+            if (data.includes('has left'))
+                this.removePlayer(this.getPlayerName(data));
         });
 
-        process.stderr.on("data", dataBuff => {
+        process.stderr.on('data', (dataBuff) => {
             const data = String(dataBuff).trim();
             // Log errors
             customLog(this.htmlID, `Error: ${data}`);
@@ -88,7 +109,7 @@ class TerrariaServer extends AStartableServer {
      */
     getPlayerName(str) {
         const toRemove = ['has joined.', 'has left.'];
-        toRemove.forEach(strToRemove => str = str.replace(strToRemove, ""));
+        toRemove.forEach((strToRemove) => (str = str.replace(strToRemove, '')));
 
         return str.trim();
     }
@@ -101,24 +122,24 @@ class TerrariaServer extends AStartableServer {
     getPlayerLimit(pathToConfig) {
         const config = this.readConfigFile(pathToConfig);
 
-
         let maxPlayersLine;
         if (config) {
             const lines = config.split('\n');
-            maxPlayersLine = lines.find(line => line.trim().startsWith('maxplayers='));
+            maxPlayersLine = lines.find((line) =>
+                line.trim().startsWith('maxplayers=')
+            );
         }
 
         if (maxPlayersLine) {
             return parseInt(maxPlayersLine.split('=')[1].trim(), 10);
-        }
-        else {
+        } else {
             customLog(this.htmlID, `Max players cannot be read from config`);
             return null;
         }
     }
 
     getStopCommand() {
-        return "exit";
+        return 'exit';
     }
 
     /**
@@ -129,23 +150,29 @@ class TerrariaServer extends AStartableServer {
     readConfigFile(filePath) {
         try {
             return fs.readFileSync(filePath, 'utf8');
-        }
-        catch (err) {
-            customLog(this.htmlID, `Error reading config file (unable to set maxPlayers automatically): ${err}`);
+        } catch (err) {
+            customLog(
+                this.htmlID,
+                `Error reading config file (unable to set maxPlayers automatically): ${err}`
+            );
             return null;
         }
     }
 
     createArgs(startArgs) {
         let args = [];
-        if (this.port && !startArgs.includes("-port")) args.push("-port", this.port.toString());
-        if (this.useSteam && !startArgs.includes("-steam")) {
-            args.push("-steam");
-            if (this.lobbyType) args.push("-" + this.lobbyType);
+        if (this.port && !startArgs.includes('-port'))
+            args.push('-port', this.port.toString());
+        if (this.useSteam && !startArgs.includes('-steam')) {
+            args.push('-steam');
+            if (this.lobbyType) args.push('-' + this.lobbyType);
         }
-        if (this.configPath && !startArgs.includes("-config")) args.push("-config", this.configPath);
-        if (this.worldPath && !startArgs.includes("-world")) args.push("-world", this.worldPath);
-        if (this.motd && !startArgs.includes("-motd")) args.push("-motd", this.motd);
+        if (this.configPath && !startArgs.includes('-config'))
+            args.push('-config', this.configPath);
+        if (this.worldPath && !startArgs.includes('-world'))
+            args.push('-world', this.worldPath);
+        if (this.motd && !startArgs.includes('-motd'))
+            args.push('-motd', this.motd);
         return [...startArgs, ...args];
     }
 }

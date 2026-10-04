@@ -1,8 +1,14 @@
-import NavLogo from "@/src/components/ui/NavLogo.jsx";
-import {useRouter} from "next/router";
-import styles from "./navbar.module.scss"
+import NavLogo from '@/src/components/ui/NavLogo.jsx';
+import { useRouter } from 'next/router';
+import styles from './navbar.module.scss';
 
-const urls = {Home: "/", Services: "/services", ZeroTier: "/zero-tier", TerraMetrics: "/terra-metrics", Users: "/users"};
+const urls = {
+    Home: '/',
+    Services: '/services',
+    ZeroTier: '/zero-tier',
+    TerraMetrics: '/terra-metrics',
+    Users: '/users',
+};
 
 function NavList() {
     const router = useRouter();
@@ -21,7 +27,12 @@ function NavList() {
         if (urls[page] === pathname) {
             return (
                 <li key={page} className="nav-item ms-2">
-                    <a className={`${styles.customNavLink} ${styles.inactive} nav-link`} href="#">{page}</a>
+                    <a
+                        className={`${styles.customNavLink} ${styles.inactive} nav-link`}
+                        href="#"
+                    >
+                        {page}
+                    </a>
                 </li>
             );
         }
@@ -29,7 +40,12 @@ function NavList() {
         else {
             return (
                 <li key={page} className="nav-item ms-2">
-                    <a className={`${styles.customNavLink} nav-link`} href={urls[page]}>{page}</a>
+                    <a
+                        className={`${styles.customNavLink} nav-link`}
+                        href={urls[page]}
+                    >
+                        {page}
+                    </a>
                 </li>
             );
         }
@@ -37,13 +53,21 @@ function NavList() {
 
     return (
         <div className="collapse navbar-collapse ms-3" id="navbarNav">
-            <ul className='navbar-nav w-100'>
+            <ul className="navbar-nav w-100">
                 {navOps}
                 {pathname !== '/login' ? (
                     <li className="nav-item ms-auto">
-                        <a className={`${styles.customNavLink} nav-link`} href="#" onClick={handleLogout}>Logout</a>
+                        <a
+                            className={`${styles.customNavLink} nav-link`}
+                            href="#"
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </a>
                     </li>
-                ) : ''}
+                ) : (
+                    ''
+                )}
             </ul>
         </div>
     );
@@ -54,13 +78,19 @@ function NavBar() {
         <>
             <nav className={`navbar navbar-expand-sm ${styles.styleNavbar}`}>
                 <div className="container-fluid">
-                    <NavLogo/>
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarNav"
-                            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <NavLogo />
+                    <button
+                        className="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav"
+                        aria-controls="navbarNav"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
                         <span className="navbar-toggler-icon"></span>
                     </button>
-                    <NavList/>
+                    <NavList />
                 </div>
             </nav>
         </>

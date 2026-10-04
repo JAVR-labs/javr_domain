@@ -1,11 +1,11 @@
-const AStartableServer = require("./AStartableServer.js");
-const {serverTypes, statuses} = require("../globals.js");
-const {ConfigTypes} = require("../ConfigSettings.js");
-const SocketEvents = require("../SocketEvents.js");
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const {GameDig} = require('gamedig');
-const treeKill = require("tree-kill");
-const {spawn} = require("child_process");
+const AStartableServer = require('./AStartableServer.js');
+const { serverTypes, statuses } = require('../globals.js');
+const { ConfigTypes } = require('../ConfigSettings.js');
+const SocketEvents = require('../SocketEvents.js');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { GameDig } = require('gamedig');
+const treeKill = require('tree-kill');
+const { spawn } = require('child_process');
 
 /**
  * @desc Class representing Minecraft server instance.
@@ -27,13 +27,28 @@ class MinecraftServer extends AStartableServer {
      * @param {string} minecraftVersion - Version of Minecraft the server is running.
      */
     constructor({
-                    port, htmlID, displayName, maxPlayers = 0,
-                    workingDir, startArgs, startingTime, cmd, debug,
-                    minecraftVersion,
-                }) {
+        port,
+        htmlID,
+        displayName,
+        maxPlayers = 0,
+        workingDir,
+        startArgs,
+        startingTime,
+        cmd,
+        debug,
+        minecraftVersion,
+    }) {
         super({
-            port, htmlID, displayName, type: serverTypes.MINECRAFT,
-            maxPlayers, workingDir, startArgs, startingTime, cmd, debug
+            port,
+            htmlID,
+            displayName,
+            type: serverTypes.MINECRAFT,
+            maxPlayers,
+            workingDir,
+            startArgs,
+            startingTime,
+            cmd,
+            debug,
         });
 
         this.type = serverTypes.MINECRAFT;
@@ -41,13 +56,14 @@ class MinecraftServer extends AStartableServer {
 
         this.minecraftVersion = minecraftVersion;
         this.failedQuery = 0;
-        MinecraftServer.minecraftJavaVer = this._configManager.getConfig(ConfigTypes.minecraftJavaVer);
+        MinecraftServer.minecraftJavaVer = this._configManager.getConfig(
+            ConfigTypes.minecraftJavaVer
+        );
 
         // This will be compared against to determine when the status has to be updated on client
         this.lastStatus = this.status;
         this.lastPlayers = this.currPlayers;
     }
-
 
     statusMonitor() {
         setInterval(() => {
@@ -61,12 +77,12 @@ class MinecraftServer extends AStartableServer {
             }
             this.lastPlayers = this.currPlayers;
             this.lastStatus = this.status;
-            this.updateStatus()
+            this.updateStatus();
         }, 1000);
     }
 
     updateStatus() {
-        this.updateServerInfo()
+        this.updateServerInfo();
     }
 
     startServer(timeout) {
@@ -76,17 +92,15 @@ class MinecraftServer extends AStartableServer {
         // Check if minecraft version has java attached
         if (!MinecraftServer.minecraftJavaVer[this.minecraftVersion]) {
             // If the version is not listed use default
-            this.currProcess = spawn(
-                "java",
-                this.startArgs,
-                {cwd: this.workingDir}
-            );
+            this.currProcess = spawn('java', this.startArgs, {
+                cwd: this.workingDir,
+            });
         } else {
             // If the version is listed use specified java version
             this.currProcess = spawn(
                 MinecraftServer.minecraftJavaVer[this.minecraftVersion],
                 this.startArgs,
-                {cwd: this.workingDir}
+                { cwd: this.workingDir }
             );
         }
 
@@ -98,7 +112,9 @@ class MinecraftServer extends AStartableServer {
             let output = data + '';
 
             // Get maxPlayers when server starts (regex to see when server is done launching)
-            if (/INFO]: Done \(.*\)! for help, type "help" or "\?"/.test(output)) {
+            if (
+                /INFO]: Done \(.*\)! for help, type "help" or "\?"/.test(output)
+            ) {
                 this.updateServerInfo();
 
                 // Send updated servers to client
@@ -106,18 +122,16 @@ class MinecraftServer extends AStartableServer {
             }
 
             // Player join event
-            if (output.includes("joined the game")) {
+            if (output.includes('joined the game')) {
                 // Update server with new info
                 this.updateServerInfo();
             }
             // Player left event
-            if (output.includes("left the game")) {
+            if (output.includes('left the game')) {
                 // Update server with new info
                 this.updateServerInfo();
             }
-        })
-
-
+        });
     }
 
     updateServerInfo() {
@@ -125,16 +139,18 @@ class MinecraftServer extends AStartableServer {
             type: 'minecraft',
             host: 'localhost',
             port: this.port,
-            socketTimeout: 500
+            socketTimeout: 500,
         })
             // If query successful
-            .then(state => {
+            .then((state) => {
                 this.failedQuery = 0;
                 if (this.status !== statuses.STOPPING) {
                     // Set server status to online
                     this.status = statuses.ONLINE;
                     // Update values
-                    this.currPlayers = (state.players ?? []).map(p => p.name || "Unknown");
+                    this.currPlayers = (state.players ?? []).map(
+                        (p) => p.name || 'Unknown'
+                    );
                     this.maxPlayers = state.maxplayers;
                 }
             })
@@ -158,14 +174,10 @@ class MinecraftServer extends AStartableServer {
             this.sendCommand('stop');
 
             setTimeout(() => {
-
                 if (this.status === statuses.STOPPING) {
                     this.forceQuit();
                 }
-
-            }, 120_000)
-
-
+            }, 120_000);
         } else {
             this.forceQuit();
         }
@@ -174,10 +186,13 @@ class MinecraftServer extends AStartableServer {
     forceQuit() {
         customLog(this.htmlID, `Server not online, forcing manual exit`);
         if (this.currProcess !== null) {
-            treeKill(this.currProcess.pid)
+            treeKill(this.currProcess.pid);
             this.currPlayers = [];
         } else {
-            customLog(this.htmlID, `Cannot stop, server not attached to this process`);
+            customLog(
+                this.htmlID,
+                `Cannot stop, server not attached to this process`
+            );
         }
     }
 
@@ -187,7 +202,7 @@ class MinecraftServer extends AStartableServer {
      */
     versionToNumber() {
         let versionInt = this.minecraftVersion.replace(/\./, '');
-        return Number(versionInt)
+        return Number(versionInt);
     }
 }
 

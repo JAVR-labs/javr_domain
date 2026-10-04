@@ -1,4 +1,4 @@
-const {Events, servers, discordBots, getWebsocket} = require("./globals.js");
+const { Events, servers, discordBots, getWebsocket } = require('./globals.js');
 
 class SocketEvents {
     /**
@@ -25,8 +25,8 @@ class SocketEvents {
      * @param {string} socketID - ID of the socket that the message is sent to.
      * @param {string} text - What will be displayed to the user.
      */
-    static info(websocket, {socketID, text}) {
-        websocket.emit(Events.INFO, {socketID, text});
+    static info(websocket, { socketID, text }) {
+        websocket.emit(Events.INFO, { socketID, text });
     }
 
     /**
@@ -35,8 +35,8 @@ class SocketEvents {
      * @param {string} socketID - ID of the socket that the message is sent to.
      * @param {string} text - What will be displayed to the user.
      */
-    static requestFailed(websocket, {socketID, text}) {
-        websocket.emit(Events.REQUEST_FAILED, {socketID, text});
+    static requestFailed(websocket, { socketID, text }) {
+        websocket.emit(Events.REQUEST_FAILED, { socketID, text });
     }
 
     /**
@@ -45,7 +45,10 @@ class SocketEvents {
      * @param {string} socketID - ID of the socket that the message is sent to.
      */
     static requestNotAllowed(websocket, socketID) {
-        websocket.emit(Events.REQUEST_FAILED, {socketID, text: "Ta funkcja została wyłączona w configu"});
+        websocket.emit(Events.REQUEST_FAILED, {
+            socketID,
+            text: 'Ta funkcja została wyłączona w configu',
+        });
     }
 }
 

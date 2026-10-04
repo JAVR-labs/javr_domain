@@ -2,11 +2,12 @@
 
 // List styling
 .stripedList {
-  li{
+  li {
     background-color: $list-color-background;
     border-color: $color_aux;
   }
-  li:nth-of-type(odd){
+
+  li:nth-of-type(odd) {
     background-color: $list-color-background-nth;
   }
 }

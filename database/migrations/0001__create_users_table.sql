@@ -6,7 +6,7 @@ CREATE TABLE users
     is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-   
+
     CONSTRAINT check_username_length CHECK (LENGTH(TRIM(username)) >= 1)
 );
 

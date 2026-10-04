@@ -27,7 +27,7 @@ const nextConfig = {
                 source: '/index.html',
                 destination: '/',
                 permanent: true,
-            }
+            },
         ];
     },
 };

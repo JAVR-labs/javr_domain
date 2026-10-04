@@ -17,25 +17,29 @@
   border-collapse: separate;
   border-spacing: 0;
 
-  tbody{
+  tbody {
     color: white;
     box-shadow: 5px 5px 11px rgba(0, 0, 0, 0.2);
-    tr{
-      th{
+
+    tr {
+      th {
         border: 1px solid $table-color-border;
         background-color: $table-color-header-background;
       }
+
       td {
         border: 1px solid $table-color-border;
         background-color: $table-color-background;
       }
     }
+
     tr:nth-child(even) {
-      th{
+      th {
         border: 1px solid $table-color-border;
         background-color: $table-color-header-background-nth;
       }
-      td{
+
+      td {
         background-color: $table-color-background-nth;
       }
     }

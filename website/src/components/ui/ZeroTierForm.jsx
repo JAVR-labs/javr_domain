@@ -3,12 +3,17 @@ import styles from '@/src/styles/zt.module.scss';
 
 const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
     return (
-        <form onSubmit={onSubmit} className={`mb-4 p-4 rounded-3 blur text-white`}>
+        <form
+            onSubmit={onSubmit}
+            className={`mb-4 p-4 rounded-3 blur text-white`}
+        >
             <h5 className="mb-4">Edytuj urządzenie: {user.name}</h5>
 
             {/* Name Input Field */}
             <div className="mb-3">
-                <label htmlFor="name" className="form-label">Nazwa:</label>
+                <label htmlFor="name" className="form-label">
+                    Nazwa:
+                </label>
                 <input
                     id="name"
                     type="text"
@@ -22,7 +27,9 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
 
             {/* Description Input Field */}
             <div className="mb-3">
-                <label htmlFor="description" className="form-label">Opis:</label>
+                <label htmlFor="description" className="form-label">
+                    Opis:
+                </label>
                 <input
                     id="description"
                     type="text"
@@ -57,7 +64,11 @@ const ZeroTierForm = ({ user, formData, onChange, onSubmit, onClose }) => {
                 <button type="submit" className="btn btn-primary">
                     Zapisz zmiany
                 </button>
-                <button type="button" onClick={onClose} className="btn btn-outline-light">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="btn btn-outline-light"
+                >
                     Zamknij
                 </button>
             </div>

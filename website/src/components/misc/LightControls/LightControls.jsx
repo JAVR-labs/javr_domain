@@ -1,7 +1,7 @@
-import {useState} from "react";
-import styles from "./LightControls.module.scss";
-import socket from "@utils/socket-util.js";
-import {Events} from "@server-lib/globals.js"
+import { useState } from 'react';
+import styles from './LightControls.module.scss';
+import socket from '@utils/socket-util.js';
+import { Events } from '@server-lib/globals.js';
 
 let updateTimeout = null;
 let overrideState = false;
@@ -22,26 +22,25 @@ function changeLightParam(event, setLightParam, productId) {
                 ...lightParams,
                 temp: {
                     ...lightParams.temp,
-                    [param]: value
-                }
+                    [param]: value,
+                },
             };
-        }
-        else {
+        } else {
             res = {
                 ...lightParams,
-                [param]: value
+                [param]: value,
             };
         }
         res = {
             ...res,
-            override: Number(overrideState)
-        }
+            override: Number(overrideState),
+        };
         // If board is defined send updated values to the server
-        if (overrideState || isCheckBox && !updateTimeout && productId) {
+        if (overrideState || (isCheckBox && !updateTimeout && productId)) {
             socket.emit(Events.ARDUINO_MODIFY_LIGHT, productId, res);
 
             updateTimeout = setTimeout(() => {
-                updateTimeout = null
+                updateTimeout = null;
             }, 500);
         }
 
@@ -66,46 +65,103 @@ function LightControls(data) {
             <div className="d-flex flex-column">
                 <div className="d-flex flex-column mb-3">
                     <label htmlFor="override">Manualna kontrola światła</label>
-                    <input type="checkbox" className="form-check-input mt-0" id="override"
-                           onChange={(event) => setOverride(event, setLightParams, productId)}
+                    <input
+                        type="checkbox"
+                        className="form-check-input mt-0"
+                        id="override"
+                        onChange={(event) =>
+                            setOverride(event, setLightParams, productId)
+                        }
                     />
                 </div>
 
                 <div>
-                    <label htmlFor="Brightness" className="form-label">Jasność</label>
-                    <input type="range" className="form-range" min="0" max="255" defaultValue="255" id="Brightness"
-                           onMouseUp={(event) => changeLightParam(event, setLightParams, productId)}
+                    <label htmlFor="Brightness" className="form-label">
+                        Jasność
+                    </label>
+                    <input
+                        type="range"
+                        className="form-range"
+                        min="0"
+                        max="255"
+                        defaultValue="255"
+                        id="Brightness"
+                        onMouseUp={(event) =>
+                            changeLightParam(event, setLightParams, productId)
+                        }
                     />
                 </div>
 
                 <div>Temperatura:</div>
                 <div className={styles.tempParamContainer}>
-                    <label htmlFor="Red" className={styles.redLabel}>Red</label>
+                    <label htmlFor="Red" className={styles.redLabel}>
+                        Red
+                    </label>
                     <div className="ms-auto">
-                        <input type="range" className="form-range" min="0" max="255" defaultValue="255" id="Red"
-                               onMouseUp={(event) => changeLightParam(event, setLightParams, productId)}
+                        <input
+                            type="range"
+                            className="form-range"
+                            min="0"
+                            max="255"
+                            defaultValue="255"
+                            id="Red"
+                            onMouseUp={(event) =>
+                                changeLightParam(
+                                    event,
+                                    setLightParams,
+                                    productId
+                                )
+                            }
                         />
                     </div>
                 </div>
                 <div className={styles.tempParamContainer}>
-                    <label htmlFor="Green" className={styles.greenLabel}>Green</label>
+                    <label htmlFor="Green" className={styles.greenLabel}>
+                        Green
+                    </label>
                     <div className="ms-auto">
-                        <input type="range" className="form-range" min="0" max="255" defaultValue="140" id="Green"
-                               onMouseUp={(event) => changeLightParam(event, setLightParams, productId)}
+                        <input
+                            type="range"
+                            className="form-range"
+                            min="0"
+                            max="255"
+                            defaultValue="140"
+                            id="Green"
+                            onMouseUp={(event) =>
+                                changeLightParam(
+                                    event,
+                                    setLightParams,
+                                    productId
+                                )
+                            }
                         />
                     </div>
                 </div>
                 <div className={styles.tempParamContainer}>
-                    <label htmlFor="Blue" className={styles.blueLabel}>Blue</label>
+                    <label htmlFor="Blue" className={styles.blueLabel}>
+                        Blue
+                    </label>
                     <div className="ms-auto">
-                        <input type="range" className="form-range" min="0" max="255" defaultValue="50" id="Blue"
-                               onMouseUp={(event) => changeLightParam(event, setLightParams, productId)}
+                        <input
+                            type="range"
+                            className="form-range"
+                            min="0"
+                            max="255"
+                            defaultValue="50"
+                            id="Blue"
+                            onMouseUp={(event) =>
+                                changeLightParam(
+                                    event,
+                                    setLightParams,
+                                    productId
+                                )
+                            }
                         />
                     </div>
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
 export default LightControls;

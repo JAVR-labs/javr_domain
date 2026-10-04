@@ -1,8 +1,8 @@
 // src/lib/SleepManager.js
 
-const {exec} = require('child_process');
-const {customLog} = require('@javr-domain/shared/Logger.js');
-const {getUsedServers} = require('../utils/custom-utils.js');
+const { exec } = require('child_process');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { getUsedServers } = require('../utils/custom-utils.js');
 
 const LOG_ID = 'Sleep-Manager';
 
@@ -16,7 +16,6 @@ let _isEnabled = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-
 /**
  * Initialise the sleep manager.
  * Must be called once after the servers array is populated.
@@ -26,15 +25,18 @@ let _isEnabled = false;
  */
 function init(servers, sleepAfterMinutes = 10, environment) {
     if (sleepAfterMinutes === -1 || isNaN(sleepAfterMinutes)) {
-      customLog(LOG_ID, 'Sleep Manager disabled with env variable');
-      _isEnabled = false;
-      return;
+        customLog(LOG_ID, 'Sleep Manager disabled with env variable');
+        _isEnabled = false;
+        return;
     }
     _servers = servers;
     _startConditionDetector();
     _sleepAfterMinutes = sleepAfterMinutes;
     _environment = environment;
-    customLog(LOG_ID, `Sleep Manager initialized. System will sleep after ${_sleepAfterMinutes} min of inactivity`);
+    customLog(
+        LOG_ID,
+        `Sleep Manager initialized. System will sleep after ${_sleepAfterMinutes} min of inactivity`
+    );
     _isEnabled = true;
 }
 
@@ -46,11 +48,17 @@ function refreshSleepTimer() {
 
     _cancelSleepTimer();
 
-    _sleepTimerID = setTimeout(() => {
-        customLog(LOG_ID, `No activity for ${_sleepAfterMinutes} min, entering sleep.`);
-        _cancelSleepTimer();
-        sleepSystem();
-    }, _sleepAfterMinutes * 60 * 1000);
+    _sleepTimerID = setTimeout(
+        () => {
+            customLog(
+                LOG_ID,
+                `No activity for ${_sleepAfterMinutes} min, entering sleep.`
+            );
+            _cancelSleepTimer();
+            sleepSystem();
+        },
+        _sleepAfterMinutes * 60 * 1000
+    );
 }
 
 /**
@@ -66,12 +74,15 @@ function sleepSystem(socket, clientSocketID) {
     }
     exec('systemctl suspend', (error, _stdout, stderr) => {
         if (error) {
-            customLog(LOG_ID, `Error putting system to sleep: ${error.message}`);
+            customLog(
+                LOG_ID,
+                `Error putting system to sleep: ${error.message}`
+            );
             if (socket) {
                 const SocketEvents = require('./SocketEvents.js');
                 SocketEvents.requestFailed(socket, {
                     socketID: clientSocketID,
-                    text: 'Manager nie chce spać (coś nie działa)'
+                    text: 'Manager nie chce spać (coś nie działa)',
                 });
             }
         }
@@ -104,4 +115,4 @@ function _cancelSleepTimer() {
     }
 }
 
-module.exports = {init, refreshSleepTimer, sleepSystem};
+module.exports = { init, refreshSleepTimer, sleepSystem };

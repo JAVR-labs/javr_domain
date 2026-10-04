@@ -1,7 +1,7 @@
-const {spawn} = require('child_process');
-const {customLog} = require("@javr-domain/shared/Logger.js");
-const {Statuses} = require("@server-lib/globals.js");
-const SocketEvents = require("@server-lib/SocketEvents.cjs");
+const { spawn } = require('child_process');
+const { customLog } = require('@javr-domain/shared/Logger.js');
+const { Statuses } = require('@server-lib/globals.js');
+const SocketEvents = require('@server-lib/SocketEvents.cjs');
 
 /**
  * @class DiscordBot
@@ -28,10 +28,12 @@ class DiscordBot {
      * @param {string} pythonPath - Path to the python.exe required to run the bot.
      */
     constructor({
-                    dirPath, name, io,
-                    lavaArgs = ["Lavalink.py"],
-                    pythonPath = "python"
-                }) {
+        dirPath,
+        name,
+        io,
+        lavaArgs = ['Lavalink.py'],
+        pythonPath = 'python',
+    }) {
         // Current state of the bot
         this.status = Statuses.OFFLINE;
         // Path to the bots folder
@@ -62,16 +64,15 @@ class DiscordBot {
      * @desc Spawns bot and Lavalink child processes.
      */
     start() {
-        customLog(this.htmlID, "Bot starting");
+        customLog(this.htmlID, 'Bot starting');
         this.updateBotStatus(Statuses.STARTING);
 
         // Start lavalink before bot (lavalink takes longer to boot up)
-        customLog(this.htmlID, "Launching Lavalink");
+        customLog(this.htmlID, 'Launching Lavalink');
         this.startLava();
 
-
         // Start the bot process
-        customLog(this.htmlID, "Launching bot");
+        customLog(this.htmlID, 'Launching bot');
         this.startBot();
     }
 
@@ -80,11 +81,10 @@ class DiscordBot {
      */
     startLava() {
         // Start lavalink process
-        this.lavaProcess = spawn(
-            `"${this.pythonPath}"`,
-            this.lavaArgs,
-            {cwd: this.dirPath, shell: true}
-        );
+        this.lavaProcess = spawn(`"${this.pythonPath}"`, this.lavaArgs, {
+            cwd: this.dirPath,
+            shell: true,
+        });
         // Start lavalink output handler
         this.lavalinkHandler();
     }
@@ -94,7 +94,10 @@ class DiscordBot {
      */
     startBot() {
         // Start bot process
-        this.botProcess = spawn(`"${this.pythonPath}"`, ['main.py'], {cwd: this.dirPath, shell: true});
+        this.botProcess = spawn(`"${this.pythonPath}"`, ['main.py'], {
+            cwd: this.dirPath,
+            shell: true,
+        });
         // Start process output handler
         this.discordProcessHandler();
     }
@@ -107,8 +110,8 @@ class DiscordBot {
         this.botProcess.stdout.on('data', (data) => {
             data = String(data);
             // Trigger when the bot reports that it's online
-            if (data.includes("online")) {
-                customLog(this.htmlID, "Bot is now online");
+            if (data.includes('online')) {
+                customLog(this.htmlID, 'Bot is now online');
                 this.updateBotStatus(Statuses.ONLINE);
             }
         });
@@ -125,19 +128,19 @@ class DiscordBot {
         this.lavaProcess.stdout.on('data', (data) => {
             data = String(data);
             // Trigger when Lavalink reports that it's online
-            if (data.includes("Lavalink is ready to accept connections.")) {
-                customLog(this.htmlID, "Successfully started lavalink");
+            if (data.includes('Lavalink is ready to accept connections.')) {
+                customLog(this.htmlID, 'Successfully started lavalink');
                 this.updateLavaStatus(Statuses.ONLINE);
             }
             // Trigger when bot connects to lavalink
-            else if (data.includes("Connection successfully established")) {
-                customLog(this.htmlID, "Lavalink Connected");
+            else if (data.includes('Connection successfully established')) {
+                customLog(this.htmlID, 'Lavalink Connected');
                 this.lavaConnected = true;
             }
         });
 
         // Start handling errors
-        this.errorHandler(this.lavaProcess)
+        this.errorHandler(this.lavaProcess);
     }
 
     /**
@@ -148,14 +151,16 @@ class DiscordBot {
         process.stderr.on('data', (err) => {
             err = String(err);
             // Filter out log spam when bot can't connect to lavalink
-            if (err.includes("Failed to authenticate Node") && err.includes(`identifier=${this.htmlID},`)) {
+            if (
+                err.includes('Failed to authenticate Node') &&
+                err.includes(`identifier=${this.htmlID},`)
+            ) {
                 // Update connection state with lavalink
-                if (this.lavaConnected){
-                    customLog(this.htmlID, "Lavalink Disconnected");
-                    this.updateLavaStatus(Statuses.OFFLINE)
+                if (this.lavaConnected) {
+                    customLog(this.htmlID, 'Lavalink Disconnected');
+                    this.updateLavaStatus(Statuses.OFFLINE);
                 }
-            }
-            else{
+            } else {
                 // Log if it's a different error
                 customLog(this.htmlID, err);
             }
@@ -172,12 +177,11 @@ class DiscordBot {
                 this.updateLavaStatus(Statuses.OFFLINE);
                 this.lavaProcess = null;
                 this.lavaConnected = false;
-                customLog(this.htmlID, "Lavalink closed");
-            }
-            else {
+                customLog(this.htmlID, 'Lavalink closed');
+            } else {
                 this.botProcess = null;
                 this.updateBotStatus(Statuses.OFFLINE);
-                customLog(this.htmlID, "Bot closed");
+                customLog(this.htmlID, 'Bot closed');
             }
         });
     }
@@ -223,4 +227,4 @@ class DiscordBot {
     }
 }
 
-module.exports = {DiscordBot};
+module.exports = { DiscordBot };
